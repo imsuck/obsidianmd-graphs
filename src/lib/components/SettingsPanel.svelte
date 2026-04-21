@@ -8,6 +8,7 @@
 		globalEnabled = $bindable(false),
 		globalAlgorithmId = $bindable(''),
 		louvainResolution = $bindable(1.0),
+		hitsBins = $bindable(5),
 		loading,
 		nodeCount,
 		linkCount,
@@ -22,6 +23,7 @@
 		globalEnabled: boolean;
 		globalAlgorithmId: string;
 		louvainResolution: number;
+		hitsBins: number;
 		loading: boolean;
 		nodeCount: number;
 		linkCount: number;
@@ -95,6 +97,13 @@
 				<div class="field" style="margin-top: 12px;">
 					<label for="resolution-slider">Resolution: {louvainResolution.toFixed(1)}</label>
 					<input id="resolution-slider" type="range" min="0.1" max="5.0" step="0.1" bind:value={louvainResolution} onchange={() => { if(globalEnabled) onApplyGlobal(); }} />
+				</div>
+			{/if}
+
+			{#if globalAlgorithmId === 'hits'}
+				<div class="field" style="margin-top: 12px;">
+					<label for="bins-input">Bins (Max {nodeCount})</label>
+					<input id="bins-input" type="number" min="1" max={nodeCount} bind:value={hitsBins} onchange={() => { if(globalEnabled) onApplyGlobal(); }} />
 				</div>
 			{/if}
 

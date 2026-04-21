@@ -12,6 +12,7 @@
 	let globalEnabled = $state(false);
 	let globalAlgorithmId = $state(GLOBAL_ALGORITHMS[0].id);
 	let louvainResolution = $state(1.0);
+	let hitsBins = $state(5);
 	let errorMsg = $state('');
 
 	let graphData = $state<GraphData>({ nodes: [], links: [] });
@@ -97,7 +98,14 @@
 		const algo = GLOBAL_ALGORITHMS.find(a => a.id === globalAlgorithmId);
 		if (!algo) return;
 
-		const { palette, communityCount: count } = algo.execute(graphData, { resolution: louvainResolution });
+		let options: any = {};
+		if (globalAlgorithmId === 'louvain') {
+			options.resolution = louvainResolution;
+		} else if (globalAlgorithmId === 'hits') {
+			options.numBins = hitsBins;
+		}
+
+		const { palette, communityCount: count } = algo.execute(graphData, options);
 		communityCount = count;
 		globalEnabled = true;
 		graphData = { ...graphData };
@@ -147,6 +155,7 @@
 		bind:globalEnabled
 		bind:globalAlgorithmId
 		bind:louvainResolution
+		bind:hitsBins
 		{loading}
 		nodeCount={graphData.nodes.length}
 		linkCount={graphData.links.length}

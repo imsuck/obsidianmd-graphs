@@ -6,7 +6,7 @@ export const HITSAlgorithm: GlobalAlgorithm = {
 	id: 'hits',
 	name: 'HITS (Hubs & Authorities)',
 	description: 'Assigns nodes to "Hubs" (link to many authorities) or "Authorities" (linked by many hubs) based on score parity.',
-	execute: (data: GraphData) => {
+	execute: (data: GraphData, options?: any) => {
 		const graph = buildGraphologyGraph(data);
 		const nodes = graph.nodes();
 
@@ -52,14 +52,14 @@ export const HITSAlgorithm: GlobalAlgorithm = {
 		// Since our graph is undirected, hubs and authorities are identical.
 		// We'll group nodes into percentiles/bins to visualize as communities.
 		const scores = [...auths.values()].sort((a, b) => a - b);
-		
-		// Create 5 bins based on score
-		const numBins = 5;
+
+		// Create bins based on score
+		const numBins = options?.numBins ?? 5;
 		const binThresholds = [];
 		for (let i = 1; i < numBins; i++) {
 			binThresholds.push(scores[Math.floor(scores.length * (i / numBins))]);
 		}
-		
+
 		const palette = generateCommunityPalette(numBins);
 
 		for (const node of data.nodes) {
@@ -68,7 +68,7 @@ export const HITSAlgorithm: GlobalAlgorithm = {
 			for (let i = 0; i < binThresholds.length; i++) {
 				if (score > binThresholds[i]) bin = i + 1;
 			}
-			
+
 			node.community = bin;
 			node.color = palette.get(bin);
 		}
