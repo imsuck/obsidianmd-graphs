@@ -1,0 +1,174 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import type { GraphData, GraphNode } from '$lib/types.js';
+
+	let {
+		graphData,
+		onNodeClick,
+		onBackgroundClick
+	}: {
+		graphData: GraphData;
+		onNodeClick: (node: GraphNode) => void;
+		onBackgroundClick: () => void;
+	} = $props();
+
+	let container: HTMLDivElement;
+	let graph: any = $state(null);
+	let ForceGraphModule: any = $state(null);
+
+	onMount(() => {
+		// Dynamic import since force-graph uses browser APIs
+		import('force-graph').then((mod) => {
+			ForceGraphModule = mod.default;
+			initGraph();
+		});
+
+		return () => {
+			if (graph) {
+				graph._destructor?.();
+				graph = null;
+			}
+		};
+	});
+
+	function initGraph() {
+		if (!ForceGraphModule || !container) return;
+
+		graph = ForceGraphModule()(container)
+			.backgroundColor('#0a0a1a')
+			.nodeLabel((node: GraphNode) => {
+				const label = node.name;
+				const typeLabel = node.type === 'tag' ? ' (tag)' : node.type === 'unresolved' ? ' (unresolved)' : '';
+				return `${label}${typeLabel}`;
+			})
+			.nodeColor((node: GraphNode) => {
+				if (node.color) return node.color;
+				switch (node.type) {
+					case 'tag': return 'oklch(0.78 0.18 160)';
+					case 'unresolved': return 'oklch(0.55 0.05 250)';
+					default: return 'oklch(0.75 0.14 260)';
+				}
+			})
+			.nodeVal((node: GraphNode) => {
+				const base = node.val ?? 1;
+				if (node.type === 'tag') return Math.max(base * 0.6, 0.5);
+				return base;
+			})
+			.nodeCanvasObject((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+				const size = Math.sqrt(node.val ?? 1) * 3;
+				const color = node.color ?? (
+					node.type === 'tag' ? 'oklch(0.78 0.18 160)' :
+						node.type === 'unresolved' ? 'oklch(0.55 0.05 250)' :
+							'oklch(0.75 0.14 260)'
+				);
+
+				// Glow
+				ctx.beginPath();
+				ctx.arc(node.x, node.y, size + 2, 0, 2 * Math.PI);
+				ctx.fillStyle = color;
+				ctx.globalAlpha = 0.15;
+				ctx.fill();
+				ctx.globalAlpha = 1;
+
+				// Node circle
+				ctx.beginPath();
+				ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
+				ctx.fillStyle = color;
+				ctx.fill();
+
+				// Label when zoomed in
+				if (globalScale >= 1.5) {
+					const label = node.name;
+					const fontSize = Math.max(11 / globalScale, 1.5);
+					ctx.font = `${fontSize}px Inter, sans-serif`;
+					ctx.textAlign = 'center';
+					ctx.textBaseline = 'top';
+					ctx.fillStyle = 'rgba(225, 232, 240, 0.85)';
+					ctx.fillText(label, node.x, node.y + size + 2);
+				}
+			})
+			.nodePointerAreaPaint((node: any, color: string, ctx: CanvasRenderingContext2D) => {
+				const size = Math.sqrt(node.val ?? 1) * 3;
+				ctx.beginPath();
+				ctx.arc(node.x, node.y, size + 2, 0, 2 * Math.PI);
+				ctx.fillStyle = color;
+				ctx.fill();
+			})
+			.linkColor(() => 'rgba(120, 140, 200, 0.2)')
+			.linkWidth(0.5)
+			.onNodeClick((node: GraphNode) => {
+				onNodeClick(node);
+				// Center on node
+				graph.centerAt(node.x, node.y, 800);
+				graph.zoom(4, 800);
+			})
+			.onBackgroundClick(() => {
+				onBackgroundClick();
+			})
+			.warmupTicks(80)
+			.cooldownTicks(200)
+			.d3AlphaDecay(0.02)
+			.d3VelocityDecay(0.3)
+			.graphData(graphData);
+
+		// Tweak default forces to pull nodes closer together
+		if (graph.d3Force('charge')) graph.d3Force('charge').strength(-20);
+		if (graph.d3Force('link')) graph.d3Force('link').distance(100);
+
+		// Add circular boundary constraint (like Obsidian)
+		graph.d3Force('boundary', (alpha: number) => {
+			const radius = Math.max(100, Math.sqrt(graphData.nodes.length) * 25); // Dynamic radius based on node count
+			const strength = alpha * 0.1;
+			const nodes = graphData.nodes;
+			for (let i = 0; i < nodes.length; i++) {
+				const node = nodes[i];
+				if (node.x === undefined || node.y === undefined || node.vx === undefined || node.vy === undefined) continue;
+				const dist = Math.hypot(node.x, node.y);
+				if (dist > radius) {
+					node.vx -= (node.x / dist) * (dist - radius) * strength;
+					node.vy -= (node.y / dist) * (dist - radius) * strength;
+				}
+			}
+		});
+
+		// Handle window resize
+		const resizeObserver = new ResizeObserver(() => {
+			if (graph && container) {
+				graph.width(container.clientWidth);
+				graph.height(container.clientHeight);
+			}
+		});
+		resizeObserver.observe(container);
+	}
+
+	// React to graphData changes
+	$effect(() => {
+		if (graph && graphData) {
+			graph.graphData(graphData);
+		}
+	});
+
+	/**
+	 * Zoom camera to a specific node (called from parent)
+	 */
+	export function zoomToNode(node: GraphNode) {
+		if (!graph) return;
+		graph.centerAt(node.x, node.y, 800);
+		graph.zoom(4, 800);
+	}
+</script>
+
+<div class="graph-container" bind:this={container}></div>
+
+<style>
+	.graph-container {
+		width: 100%;
+		height: 100%;
+		position: absolute;
+		inset: 0;
+	}
+
+	.graph-container :global(canvas) {
+		outline: none;
+	}
+</style>
