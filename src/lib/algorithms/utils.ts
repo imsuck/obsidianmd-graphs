@@ -5,7 +5,7 @@ import type { GraphData, GraphNode, AnalyticsResult } from '../types.js';
  * Build a graphology Graph instance from our GraphData.
  */
 export function buildGraphologyGraph(data: GraphData): Graph {
-	const graph = new Graph({ type: 'undirected', allowSelfLoops: true });
+	const graph = new Graph({ type: 'directed', allowSelfLoops: true });
 
 	for (const node of data.nodes) {
 		if (!graph.hasNode(node.id)) {
@@ -26,7 +26,7 @@ export function buildGraphologyGraph(data: GraphData): Graph {
 
 export function mapToSortedResults(scores: Map<string, number>, data: GraphData, selectedNodeId: string): AnalyticsResult[] {
 	const nodeMap = new Map(data.nodes.map((n) => [n.id, n]));
-	
+
 	// Pre-calculate edges from selected node for the isLinked flag
 	const linkedNodes = new Set<string>();
 	for (const link of data.links) {

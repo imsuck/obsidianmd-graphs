@@ -55,3 +55,10 @@ export interface GlobalAlgorithm {
 	execute: (data: GraphData, options?: any) => { palette: Map<number, string>; communityCount: number };
 }
 
+export interface MetricAlgorithm {
+	id: string;
+	name: string;
+	description: string;
+	execute: (data: GraphData, options?: any) => void;
+}
+

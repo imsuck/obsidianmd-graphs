@@ -3,8 +3,8 @@
  * Acts as a central dispatcher for the graph algorithms.
  */
 
-import type { GraphData, GraphNode, AnalyticsResult, GlobalAlgorithm, LocalAlgorithm } from './types.js';
-import { LOCAL_ALGORITHMS, GLOBAL_ALGORITHMS } from './algorithms/index.js';
+import type { GraphData, GraphNode, AnalyticsResult, GlobalAlgorithm, LocalAlgorithm, MetricAlgorithm } from './types.js';
+import { LOCAL_ALGORITHMS, GLOBAL_ALGORITHMS, METRIC_ALGORITHMS } from './algorithms/index.js';
 
 /**
  * Gets the representative of a community, defined as the node with the highest degree in that community.
@@ -34,4 +34,4 @@ export function getCommunityRepresentative(data: GraphData, communityId: number)
 	return representative;
 }
 
-export { LOCAL_ALGORITHMS, GLOBAL_ALGORITHMS };
+export { LOCAL_ALGORITHMS, GLOBAL_ALGORITHMS, METRIC_ALGORITHMS };

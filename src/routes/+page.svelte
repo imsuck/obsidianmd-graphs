@@ -2,7 +2,7 @@
 	import ForceGraph from '$lib/components/ForceGraph.svelte';
 	import SettingsPanel from '$lib/components/SettingsPanel.svelte';
 	import AnalyticsPopup from '$lib/components/AnalyticsPopup.svelte';
-	import { GLOBAL_ALGORITHMS, getCommunityRepresentative } from '$lib/analytics.js';
+	import { GLOBAL_ALGORITHMS, METRIC_ALGORITHMS, getCommunityRepresentative } from '$lib/analytics.js';
 	import type { GraphData, GraphNode } from '$lib/types.js';
 
 	let vaultPath = $state('');
@@ -12,7 +12,8 @@
 	let globalEnabled = $state(false);
 	let globalAlgorithmId = $state(GLOBAL_ALGORITHMS[0].id);
 	let louvainResolution = $state(1.0);
-	let hitsBins = $state(5);
+	let metricId = $state(METRIC_ALGORITHMS[0].id);
+	let showArrows = $state(true);
 	let errorMsg = $state('');
 
 	let graphData = $state<GraphData>({ nodes: [], links: [] });
@@ -41,6 +42,7 @@
 				throw new Error(body.message || `HTTP ${res.status}`);
 			}
 			graphData = await res.json();
+			applyMetric();
 		} catch (e: unknown) {
 			errorMsg = e instanceof Error ? e.message : 'Failed to load vault';
 			graphData = { nodes: [], links: [] };
@@ -101,8 +103,6 @@
 		let options: any = {};
 		if (globalAlgorithmId === 'louvain') {
 			options.resolution = louvainResolution;
-		} else if (globalAlgorithmId === 'hits') {
-			options.numBins = hitsBins;
 		}
 
 		const { palette, communityCount: count } = algo.execute(graphData, options);
@@ -114,6 +114,14 @@
 		if (selectedNode) {
 			handleNodeClick(selectedNode);
 		}
+	}
+
+	function applyMetric() {
+		const algo = METRIC_ALGORITHMS.find((a) => a.id === metricId);
+		if (!algo) return;
+
+		algo.execute(graphData);
+		graphData = { ...graphData };
 	}
 </script>
 
@@ -130,6 +138,7 @@
 		<ForceGraph
 			bind:this={forceGraphRef}
 			{graphData}
+			{showArrows}
 			onNodeClick={handleNodeClick}
 			onBackgroundClick={handleBackgroundClick}
 		/>
@@ -152,10 +161,11 @@
 		bind:vaultPath
 		bind:linkMode
 		bind:tagMode
+		bind:showArrows
 		bind:globalEnabled
 		bind:globalAlgorithmId
 		bind:louvainResolution
-		bind:hitsBins
+		bind:metricId
 		{loading}
 		nodeCount={graphData.nodes.length}
 		linkCount={graphData.links.length}
@@ -163,6 +173,7 @@
 		onLoadVault={loadVault}
 		onToggleGlobal={toggleGlobal}
 		onApplyGlobal={applyGlobal}
+		onApplyMetric={applyMetric}
 	/>
 
 	<AnalyticsPopup
