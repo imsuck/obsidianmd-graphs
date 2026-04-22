@@ -120,14 +120,14 @@
 			.onBackgroundClick(() => {
 				onBackgroundClick();
 			})
-			.warmupTicks(80)
+			.warmupTicks(50)
 			.cooldownTicks(200)
 			.d3AlphaDecay(0.05)
-			.d3VelocityDecay(0.3)
+			.d3VelocityDecay(0.6)
 			.graphData(graphData);
 
 		// Tweak default forces to pull nodes closer together
-		graph.d3Force("charge").strength(-100).theta(1.3).distanceMax(1000);
+		graph.d3Force("charge").strength(-100).theta(1.0).distanceMax(1000);
 		graph.d3Force("link").distance(75);
 		graph.d3Force("x", d3.forceX().strength(0.1));
 		graph.d3Force("y", d3.forceY().strength(0.1));

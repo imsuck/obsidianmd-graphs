@@ -17,8 +17,8 @@
 
 ## Start the server
 
-- Run `pnpm dev`
-- Visit http://localhost:5173 and enjoy the magic
+- Run `pnpm start`
+- Visit http://localhost:4173 and enjoy the magic
 
 ## TODO: Graph Algorithms
 
