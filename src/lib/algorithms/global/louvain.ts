@@ -1,5 +1,5 @@
 import type { GlobalAlgorithm, GraphData } from '../../types.js';
-import { buildGraphologyGraph, mixColorsNeighbor } from '../utils.js';
+import { buildGraphologyGraph } from '../utils.js';
 import louvain from 'graphology-communities-louvain';
 import { generateCommunityPalette } from '../../oklch-palette.js';
 

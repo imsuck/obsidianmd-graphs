@@ -11,7 +11,7 @@
 	import type { GraphData, GraphNode } from "$lib/types.js";
 	import {
 		buildGraphologyGraph,
-		mixColorsNeighbor,
+		diffuseColors,
 	} from "$lib/algorithms/utils";
 
 	let vaultPath = $state("");
@@ -127,12 +127,7 @@
 
 		if (blendCommunities) {
 			const graph = buildGraphologyGraph(graphData);
-			const nodeMap = new Map<string, GraphNode>(
-				graphData.nodes.map((n) => [n.id, n]),
-			);
-			for (const node of graphData.nodes) {
-				mixColorsNeighbor(graph, node, palette, nodeMap);
-			}
+			diffuseColors(graph, graphData, palette);
 		}
 
 		graphData = { ...graphData };

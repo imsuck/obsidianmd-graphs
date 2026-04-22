@@ -11,7 +11,7 @@ export function generateCommunityPalette(communityCount: number): Map<number, st
 
 	// A step of ~45-55 degrees gives colors that are distinct but related, 
 	// rather than the maximal contrast of the golden angle.
-	const angleStep = 7;
+	const angleStep = 23;
 
 	for (let i = 0; i < communityCount; i++) {
 		const hue = (i * angleStep) % 360;

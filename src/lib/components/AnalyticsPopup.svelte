@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { AnalyticsResult, GraphNode, GraphData } from '$lib/types.js';
-	import { LOCAL_ALGORITHMS } from '$lib/algorithms/index.js';
+	import type { AnalyticsResult, GraphNode, GraphData } from "$lib/types.js";
+	import { LOCAL_ALGORITHMS } from "$lib/algorithms/index.js";
 
 	let {
 		graphData,
 		selectedNode,
 		communityRepresentative,
 		onClose,
-		onNavigate
+		onNavigate,
 	}: {
 		graphData: GraphData;
 		selectedNode: GraphNode | null;
@@ -17,33 +17,62 @@
 	} = $props();
 
 	let activeAlgoId = $state<string>(LOCAL_ALGORITHMS[0].id);
-	let activeAlgo = $derived(LOCAL_ALGORITHMS.find(a => a.id === activeAlgoId) || LOCAL_ALGORITHMS[0]);
-	let results = $derived(selectedNode && graphData ? activeAlgo.execute(graphData, selectedNode.id) : []);
+	let activeAlgo = $derived(
+		LOCAL_ALGORITHMS.find((a) => a.id === activeAlgoId) ||
+			LOCAL_ALGORITHMS[0],
+	);
+	let results = $derived(
+		selectedNode && graphData
+			? activeAlgo.execute(graphData, selectedNode.id)
+			: [],
+	);
 </script>
 
 {#if selectedNode}
 	<div class="popup">
 		<div class="popup-header">
 			<div class="node-info">
-				<span class="node-type-badge" class:tag={selectedNode.type === 'tag'} class:unresolved={selectedNode.type === 'unresolved'}>
+				<span
+					class="node-type-badge"
+					class:tag={selectedNode.type === "tag"}
+					class:unresolved={selectedNode.type === "unresolved"}
+				>
 					{selectedNode.type}
 				</span>
 				<h3 class="node-name">{selectedNode.name}</h3>
 				{#if communityRepresentative && communityRepresentative.id !== selectedNode.id}
-					<button class="representative" onclick={() => onNavigate(communityRepresentative!.id)}>
+					<button
+						class="representative"
+						onclick={() => onNavigate(communityRepresentative!.id)}
+					>
 						Rep: {communityRepresentative.name}
 					</button>
 				{/if}
 			</div>
-			<button class="close-btn" onclick={onClose} aria-label="Close popup">
-				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+			<button
+				class="close-btn"
+				onclick={onClose}
+				aria-label="Close popup"
+			>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 14 14"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<path d="M1 1l12 12M13 1L1 13" />
 				</svg>
 			</button>
 		</div>
 
 		<div class="dropdown-container">
-			<select class="algo-select" bind:value={activeAlgoId} title={activeAlgo?.description}>
+			<select
+				class="algo-select"
+				bind:value={activeAlgoId}
+				title={activeAlgo?.description}
+			>
 				{#each LOCAL_ALGORITHMS as algo}
 					<option value={algo.id}>{algo.name}</option>
 				{/each}
@@ -55,15 +84,25 @@
 				<p class="empty">No related nodes found</p>
 			{:else}
 				{#each results as result, i}
-					<button class="result-row" onclick={() => onNavigate(result.nodeId)}>
+					<button
+						class="result-row"
+						onclick={() => onNavigate(result.nodeId)}
+					>
 						<span class="rank">#{i + 1}</span>
-						<span class="result-name">
-							{result.nodeName}
+						<span
+							class="result-name"
+							class:unresolved={result.nodeType === "unresolved"}
+						>
 							{#if result.isLinked}
-								<span class="link-icon" title="Already linked">🔗</span>
+								<span class="link-icon" title="Already linked"
+									>🔗</span
+								>
 							{/if}
+							{result.nodeName}
 						</span>
-						<span class="result-score">{result.score.toFixed(3)}</span>
+						<span class="result-score"
+							>{result.score.toFixed(3)}</span
+						>
 					</button>
 				{/each}
 			{/if}
@@ -89,8 +128,14 @@
 		animation: slideIn 0.25s ease-out;
 	}
 	@keyframes slideIn {
-		from { opacity: 0; transform: translateX(20px); }
-		to { opacity: 1; transform: translateX(0); }
+		from {
+			opacity: 0;
+			transform: translateX(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
 	}
 	.popup-header {
 		display: flex;
@@ -99,7 +144,10 @@
 		padding: 16px 16px 12px;
 		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 	}
-	.node-info { flex: 1; min-width: 0; }
+	.node-info {
+		flex: 1;
+		min-width: 0;
+	}
 	.node-type-badge {
 		display: inline-block;
 		font-size: 10px;
@@ -140,7 +188,7 @@
 		border-radius: 4px;
 		padding: 2px 6px;
 		cursor: pointer;
-		font-family: 'Inter', sans-serif;
+		font-family: "Inter", sans-serif;
 		text-align: left;
 		max-width: 100%;
 		overflow: hidden;
@@ -181,7 +229,7 @@
 		padding: 8px 12px;
 		font-size: 13px;
 		font-weight: 500;
-		font-family: 'Inter', sans-serif;
+		font-family: "Inter", sans-serif;
 		background: rgba(255, 255, 255, 0.04);
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		border-radius: 8px;
@@ -231,11 +279,13 @@
 		border-radius: 10px;
 		color: white;
 		cursor: pointer;
-		font-family: 'Inter', sans-serif;
+		font-family: "Inter", sans-serif;
 		text-align: left;
 		transition: background 0.15s;
 	}
-	.result-row:hover { background: rgba(255, 255, 255, 0.06); }
+	.result-row:hover {
+		background: rgba(255, 255, 255, 0.06);
+	}
 	.rank {
 		font-size: 11px;
 		font-weight: 600;
@@ -250,6 +300,9 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	.result-name.unresolved {
+		opacity: 0.5;
 	}
 	.result-score {
 		font-size: 12px;

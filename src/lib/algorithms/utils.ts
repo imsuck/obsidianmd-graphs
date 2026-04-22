@@ -37,46 +37,104 @@ export function mapToSortedResults(scores: Map<string, number>, data: GraphData,
 	}
 
 	return [...scores.entries()]
-		.map(([nodeId, score]) => ({
-			nodeId,
-			nodeName: nodeMap.get(nodeId)?.name ?? nodeId,
-			score,
-			isLinked: linkedNodes.has(nodeId)
-		}))
+		.map(([nodeId, score]) => {
+			const node = nodeMap.get(nodeId);
+			return {
+				nodeId,
+				nodeName: node?.name ?? nodeId,
+				nodeType: node?.type,
+				score,
+				isLinked: linkedNodes.has(nodeId)
+			};
+		})
 		.sort((a, b) => b.score - a.score)
 		.slice(0, 20); // top 20
 }
 
-export function mixColorsNeighbor(
+/**
+ * Diffusion / label propagation (Laplacian smoothing)
+ * Diffuses community memberships across the graph to create smooth color transitions.
+ */
+export function diffuseColors(
 	graph: Graph,
-	node: GraphNode,
+	graphData: GraphData,
 	palette: Map<number, string>,
-	nodeMap: Map<string, GraphNode>
+	iterations: number = 100,
+	alpha: number = 0.9
 ) {
-	if (node.community === undefined) return;
+	const nodes = graphData.nodes;
+	const nodeCount = nodes.length;
+	const communityCount = palette.size;
+	if (nodeCount === 0 || communityCount === 0) return;
 
-	const selfColor = palette.get(node.community);
-	if (!selfColor) return;
+	const idToIndex = new Map<string, number>();
+	nodes.forEach((node, i) => idToIndex.set(node.id, i));
 
-	const neighbors = graph.neighbors(node.id);
+	// Soft memberships P[nodeIndex * communityCount + communityIndex]
+	let P = new Float32Array(nodeCount * communityCount);
+	const P0 = new Float32Array(nodeCount * communityCount);
 
-	const alpha = 0.8;
-	const beta = 1.0;
-	const selfWeight = alpha + beta * (node.val ?? 1);
-
-	const colorsWithWeights = [{ color: selfColor, weight: selfWeight }];
-
-	for (const neighborId of neighbors) {
-		const neighbor = nodeMap.get(neighborId);
-		if (neighbor && neighbor.community !== undefined) {
-			const neighborColor = palette.get(neighbor.community);
-			if (neighborColor) {
-				colorsWithWeights.push({ color: neighborColor, weight: 1.0 });
-			}
+	// Initialize one-hot
+	for (let i = 0; i < nodeCount; i++) {
+		const comm = nodes[i].community;
+		if (comm !== undefined && comm < communityCount) {
+			const idx = i * communityCount + comm;
+			P[idx] = 1.0;
+			P0[idx] = 1.0;
 		}
 	}
 
-	node.color = mixOKLCHColors(colorsWithWeights);
+	for (let t = 0; t < iterations; t++) {
+		const P_new = new Float32Array(nodeCount * communityCount);
+
+		for (let i = 0; i < nodeCount; i++) {
+			const nodeId = nodes[i].id;
+			const neighbors = graph.neighbors(nodeId);
+
+			if (neighbors.length === 0) {
+				for (let c = 0; c < communityCount; c++) {
+					const idx = i * communityCount + c;
+					P_new[idx] = P[idx];
+				}
+			} else {
+				// Average over neighbors
+				for (const neighborId of neighbors) {
+					const j = idToIndex.get(neighborId);
+					if (j !== undefined) {
+						const weight = 1.0 / neighbors.length;
+						for (let c = 0; c < communityCount; c++) {
+							P_new[i * communityCount + c] += P[j * communityCount + c] * weight;
+						}
+					}
+				}
+			}
+
+			// Anchor to original labels
+			for (let c = 0; c < communityCount; c++) {
+				const idx = i * communityCount + c;
+				P_new[idx] = alpha * P_new[idx] + (1 - alpha) * P0[idx];
+			}
+		}
+		P = P_new;
+	}
+
+	// Final color assignment
+	for (let i = 0; i < nodeCount; i++) {
+		const colorsWithWeights = [];
+		for (let c = 0; c < communityCount; c++) {
+			const weight = P[i * communityCount + c];
+			if (weight > 0.005) {
+				const color = palette.get(c);
+				if (color) {
+					colorsWithWeights.push({ color, weight });
+				}
+			}
+		}
+
+		if (colorsWithWeights.length > 0) {
+			nodes[i].color = mixOKLCHColors(colorsWithWeights);
+		}
+	}
 }
 
 function parseOKLCH(s: string) {

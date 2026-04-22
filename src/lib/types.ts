@@ -37,6 +37,7 @@ export interface VaultConfig {
 export interface AnalyticsResult {
 	nodeId: string;
 	nodeName: string;
+	nodeType?: 'note' | 'tag' | 'unresolved';
 	score: number;
 	isLinked?: boolean;
 }

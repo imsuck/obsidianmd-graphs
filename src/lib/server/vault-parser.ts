@@ -28,6 +28,7 @@ export async function parseVault(config: VaultConfig): Promise<GraphData> {
 	const nodeMap = new Map<string, GraphNode>();
 	const links: GraphLink[] = [];
 	const fileIndex = buildFileIndex(mdFiles, config.vaultPath);
+	const existingPaths = new Set(fileIndex.values());
 
 	for (const filePath of mdFiles) {
 		const relPath = relative(config.vaultPath, filePath);
@@ -61,11 +62,18 @@ export async function parseVault(config: VaultConfig): Promise<GraphData> {
 
 			if (!resolvedNode) {
 				// Create unresolved or note node
-				const existsInIndex = fileIndex.has(target.toLowerCase());
+				const exists = existingPaths.has(resolvedId);
+
+				// A link is unresolved only if it's supposed to be a .md file and it wasn't found in the index.
+				// Non-.md files (e.g. images, pdfs) are considered "real" links.
+				const lastDotIndex = resolvedId.lastIndexOf('.');
+				const hasExtension = lastDotIndex > resolvedId.lastIndexOf('/');
+				const isMd = resolvedId.toLowerCase().endsWith('.md') || !hasExtension;
+
 				nodeMap.set(resolvedId, {
 					id: resolvedId,
 					name: basename(resolvedId, '.md'),
-					type: existsInIndex ? 'note' : 'unresolved',
+					type: isMd && !exists ? 'unresolved' : 'note',
 					val: 1
 				});
 			}
