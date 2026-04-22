@@ -1,6 +1,5 @@
 import type { GlobalAlgorithm, GraphData } from "../../types.js";
-import { buildGraphologyGraph } from "../utils.js";
-import { generateCommunityPalette } from "../../oklch-palette.js";
+import { buildGraphologyGraph, finalizeCommunityColors } from "../utils.js";
 
 export const LabelPropagationAlgorithm: GlobalAlgorithm = {
   id: "label-propagation",
@@ -54,22 +53,6 @@ export const LabelPropagationAlgorithm: GlobalAlgorithm = {
       iterations++;
     }
 
-    const communitySet = new Set(labels.values());
-    const palette = generateCommunityPalette(communitySet.size);
-
-    const uniqueCommunities = [...communitySet];
-    const remap = new Map<number, number>();
-    uniqueCommunities.forEach((c, i) => remap.set(c, i));
-
-    for (const node of data.nodes) {
-      const rawCommunity = labels.get(node.id);
-      if (rawCommunity !== undefined) {
-        const idx = remap.get(rawCommunity)!;
-        node.community = idx;
-        node.color = palette.get(idx);
-      }
-    }
-
-    return { palette, communityCount: communitySet.size };
+    return finalizeCommunityColors(graph, data, labels);
   },
 };

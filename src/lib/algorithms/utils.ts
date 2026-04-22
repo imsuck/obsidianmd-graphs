@@ -1,5 +1,7 @@
 import Graph from "graphology";
+import { bfs } from "graphology-traversal";
 import type { GraphData, GraphNode, AnalyticsResult } from "../types.js";
+import { generateCommunityPalette } from "../oklch-palette.js";
 
 /**
  * Build a graphology Graph instance from our GraphData.
@@ -196,4 +198,71 @@ function mixOKLCHColors(
   const h = (Math.atan2(totalY, totalX) * 180) / Math.PI;
 
   return formatOKLCH(l, c, (h + 360) % 360);
+}
+
+/**
+ * Finalizes community detection by ordering communities by structural proximity
+ * and assigning colors from a consistent palette.
+ */
+export function finalizeCommunityColors(
+  graph: Graph,
+  data: GraphData,
+  nodeToCommunity: Map<string, number> | { [key: string]: number },
+): { palette: Map<number, string>; communityCount: number } {
+  // Convert object-based communities to Map if necessary
+  const nodeMap =
+    nodeToCommunity instanceof Map
+      ? nodeToCommunity
+      : new Map(Object.entries(nodeToCommunity));
+
+  // 1. Find unique communities
+  const communitySet = new Set<number>();
+  nodeMap.forEach((commId) => communitySet.add(commId));
+  const uniqueCommunities = [...communitySet];
+
+  if (uniqueCommunities.length === 0) {
+    return { palette: new Map(), communityCount: 0 };
+  }
+
+  // 2. Build Meta-Graph: Each community is a node
+  const metaGraph = new Graph({ type: "undirected" });
+  uniqueCommunities.forEach((c) => metaGraph.addNode(c.toString()));
+
+  graph.forEachEdge((_edge, _attr, source, target) => {
+    const c1 = nodeMap.get(source);
+    const c2 = nodeMap.get(target);
+    if (c1 !== undefined && c2 !== undefined && c1 !== c2) {
+      if (!metaGraph.hasEdge(c1.toString(), c2.toString())) {
+        metaGraph.addEdge(c1.toString(), c2.toString());
+      }
+    }
+  });
+
+  // 3. Order by structural proximity (BFS)
+  const orderedCommunities: number[] = [];
+
+
+  bfs(metaGraph, (n, _attr, _dep) => {
+    orderedCommunities.push(parseInt(n));
+  });
+
+  const remap = new Map<number, number>();
+  orderedCommunities.forEach((oldC, newIdx) => remap.set(oldC, newIdx));
+
+  const communityCount = uniqueCommunities.length;
+  const palette = generateCommunityPalette(communityCount);
+
+  // 5. Assign to data.nodes
+  for (const node of data.nodes) {
+    const rawCommunity = nodeMap.get(node.id);
+    if (rawCommunity !== undefined) {
+      const idx = remap.get(rawCommunity);
+      if (idx !== undefined) {
+        node.community = idx;
+        node.color = palette.get(idx);
+      }
+    }
+  }
+
+  return { palette, communityCount };
 }
