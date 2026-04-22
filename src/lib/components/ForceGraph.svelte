@@ -170,10 +170,26 @@
 		resizeObserver.observe(container);
 	}
 
+	let lastNodes: any[] = [];
+	let lastLinks: any[] = [];
+
 	// React to graphData and showArrows changes
 	$effect(() => {
-		if (graph) {
-			if (graphData) graph.graphData(graphData);
+		if (graph && graphData) {
+			const nodesChanged = graphData.nodes !== lastNodes;
+			const linksChanged = graphData.links !== lastLinks;
+
+			if (nodesChanged || linksChanged) {
+				graph.graphData(graphData);
+				lastNodes = graphData.nodes;
+				lastLinks = graphData.links;
+			} else {
+				// Only attributes (color, size) changed.
+				// Since nodeCanvasObject reads directly from node objects,
+				// we just need to trigger a single frame redraw if the simulation is paused.
+				// A zero-duration zoom to the current level is a safe way to trigger a repaint in 2D force-graph.
+				graph.zoom(graph.zoom(), 0);
+			}
 			graph.linkDirectionalArrowLength(showArrows ? 3.5 : 0);
 		}
 	});
