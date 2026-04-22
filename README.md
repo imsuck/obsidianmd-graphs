@@ -1,5 +1,9 @@
 # Obsidian graph analysis
 
+> [!warning] AI Warning
+> This was written using sloppy models. User discretion advised!
+> However, your data is local and read-only. No worries about that sort of privacy issue.
+
 ## Download
 
 - Go to the top of the page
