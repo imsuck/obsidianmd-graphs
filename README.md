@@ -8,7 +8,7 @@
 
 ## Fetch dependencies
 
-- Make sure you have [pnpm](https://pnpm.io/installation) installed
+- Make sure you have [node](https://nodejs.org/en/download/) and [pnpm](https://pnpm.io/installation) installed
 - `pnpm i`
 
 ## Start the server
