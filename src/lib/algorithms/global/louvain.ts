@@ -1,5 +1,5 @@
 import type { GlobalAlgorithm, GraphData } from '../../types.js';
-import { buildGraphologyGraph } from '../utils.js';
+import { buildGraphologyGraph, mixColorsNeighbor } from '../utils.js';
 import louvain from 'graphology-communities-louvain';
 import { generateCommunityPalette } from '../../oklch-palette.js';
 
@@ -25,11 +25,10 @@ export const LouvainAlgorithm: GlobalAlgorithm = {
 		// Assign to nodes
 		for (const node of data.nodes) {
 			const rawCommunity = communities[node.id];
-			if (rawCommunity !== undefined) {
-				const idx = remap.get(rawCommunity)!;
-				node.community = idx;
-				node.color = palette.get(idx);
-			}
+			if (rawCommunity === undefined) continue;
+			const idx = remap.get(rawCommunity)!;
+			node.community = idx;
+			node.color = palette.get(idx);
 		}
 
 		return { palette, communityCount: communitySet.size };

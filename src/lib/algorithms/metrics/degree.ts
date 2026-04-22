@@ -13,7 +13,7 @@ export const DegreeMetric: MetricAlgorithm = {
 			degreeCounts.set(tgt, (degreeCounts.get(tgt) ?? 0) + 1);
 		}
 		for (const node of data.nodes) {
-			node.val = Math.max(1, degreeCounts.get(node.id) ?? 1);
+			node.val = Math.max(1, Math.sqrt(degreeCounts.get(node.id) ?? 1));
 		}
 	}
 };

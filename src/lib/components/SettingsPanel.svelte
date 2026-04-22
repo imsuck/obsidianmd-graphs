@@ -17,6 +17,7 @@
 		nodeCount,
 		linkCount,
 		communityCount,
+		blendCommunities = $bindable(true),
 		onLoadVault,
 		onToggleGlobal,
 		onApplyGlobal,
@@ -34,6 +35,7 @@
 		nodeCount: number;
 		linkCount: number;
 		communityCount: number;
+		blendCommunities: boolean;
 		onLoadVault: () => void;
 		onToggleGlobal: () => void;
 		onApplyGlobal: () => void;
@@ -173,6 +175,13 @@
 				</select>
 			</div>
 
+			<div class="field">
+				<label class="checkbox-label">
+					<input type="checkbox" bind:checked={blendCommunities} />
+					<span>Blend Communities</span>
+				</label>
+			</div>
+
 			<button
 				class="analytics-btn"
 				class:active={globalEnabled}
@@ -246,7 +255,10 @@
 	}
 	.settings-panel.collapsed {
 		width: 48px;
+		height: 48px;
 		overflow: hidden;
+		background: none;
+		border: none;
 	}
 
 	.toggle-btn {

@@ -1,50 +1,65 @@
 <script lang="ts">
-	import ForceGraph from '$lib/components/ForceGraph.svelte';
-	import SettingsPanel from '$lib/components/SettingsPanel.svelte';
-	import AnalyticsPopup from '$lib/components/AnalyticsPopup.svelte';
-	import { GLOBAL_ALGORITHMS, METRIC_ALGORITHMS, getCommunityRepresentative } from '$lib/analytics.js';
-	import type { GraphData, GraphNode } from '$lib/types.js';
+	import { untrack } from "svelte";
+	import ForceGraph from "$lib/components/ForceGraph.svelte";
+	import SettingsPanel from "$lib/components/SettingsPanel.svelte";
+	import AnalyticsPopup from "$lib/components/AnalyticsPopup.svelte";
+	import {
+		GLOBAL_ALGORITHMS,
+		METRIC_ALGORITHMS,
+		getCommunityRepresentative,
+	} from "$lib/analytics.js";
+	import type { GraphData, GraphNode } from "$lib/types.js";
+	import {
+		buildGraphologyGraph,
+		mixColorsNeighbor,
+	} from "$lib/algorithms/utils";
 
-	let vaultPath = $state('');
-	let linkMode = $state<'auto' | 'absolute' | 'relative'>('auto');
-	let tagMode = $state<'flat' | 'hierarchical'>('flat');
+	let vaultPath = $state("");
+	let linkMode = $state<"auto" | "absolute" | "relative">("auto");
+	let tagMode = $state<"flat" | "hierarchical">("flat");
 	let loading = $state(false);
 	let globalEnabled = $state(false);
 	let globalAlgorithmId = $state(GLOBAL_ALGORITHMS[0].id);
 	let louvainResolution = $state(1.0);
 	let metricId = $state(METRIC_ALGORITHMS[0].id);
 	let showArrows = $state(true);
-	let errorMsg = $state('');
+	let errorMsg = $state("");
 
 	let graphData = $state<GraphData>({ nodes: [], links: [] });
 	let selectedNode = $state<GraphNode | null>(null);
 	let communityCount = $state(0);
+	let blendCommunities = $state(true);
 
 	let forceGraphRef: ForceGraph | undefined = $state();
+
+	let palette = $state<Map<number, string>>();
 
 	async function loadVault() {
 		if (!vaultPath) return;
 		loading = true;
-		errorMsg = '';
+		errorMsg = "";
 		selectedNode = null;
 		globalEnabled = false;
 		communityCount = 0;
+		blendCommunities = true;
 
 		try {
 			const params = new URLSearchParams({
 				vault: vaultPath,
 				linkMode,
-				tagMode
+				tagMode,
 			});
 			const res = await fetch(`/api/graph?${params}`);
 			if (!res.ok) {
-				const body = await res.json().catch(() => ({ message: res.statusText }));
+				const body = await res
+					.json()
+					.catch(() => ({ message: res.statusText }));
 				throw new Error(body.message || `HTTP ${res.status}`);
 			}
 			graphData = await res.json();
 			applyMetric();
 		} catch (e: unknown) {
-			errorMsg = e instanceof Error ? e.message : 'Failed to load vault';
+			errorMsg = e instanceof Error ? e.message : "Failed to load vault";
 			graphData = { nodes: [], links: [] };
 		} finally {
 			loading = false;
@@ -57,7 +72,10 @@
 		selectedNode = node;
 
 		if (globalEnabled && node.community !== undefined) {
-			communityRepresentative = getCommunityRepresentative(graphData, node.community);
+			communityRepresentative = getCommunityRepresentative(
+				graphData,
+				node.community,
+			);
 		} else {
 			communityRepresentative = null;
 		}
@@ -86,6 +104,7 @@
 				node.community = undefined;
 				node.color = undefined;
 			}
+			palette = undefined;
 			communityCount = 0;
 			globalEnabled = false;
 			communityRepresentative = null;
@@ -96,20 +115,58 @@
 		}
 	}
 
+	function reapplyColors() {
+		if (!palette || !globalEnabled) return;
+
+		// Reset to base community colors first
+		for (const node of graphData.nodes) {
+			if (node.community !== undefined) {
+				node.color = palette.get(node.community);
+			}
+		}
+
+		if (blendCommunities) {
+			const graph = buildGraphologyGraph(graphData);
+			const nodeMap = new Map<string, GraphNode>(
+				graphData.nodes.map((n) => [n.id, n]),
+			);
+			for (const node of graphData.nodes) {
+				mixColorsNeighbor(graph, node, palette, nodeMap);
+			}
+		}
+
+		graphData = { ...graphData };
+	}
+
+	$effect(() => {
+		// Reactive redraw on blendCommunities toggle
+		// We untrack to avoid infinite loops when reapplyColors updates graphData
+		if (blendCommunities !== undefined && globalEnabled) {
+			untrack(() => {
+				reapplyColors();
+			});
+		}
+	});
+
 	function applyGlobal() {
-		const algo = GLOBAL_ALGORITHMS.find(a => a.id === globalAlgorithmId);
+		const algo = GLOBAL_ALGORITHMS.find((a) => a.id === globalAlgorithmId);
 		if (!algo) return;
 
 		let options: any = {};
-		if (globalAlgorithmId === 'louvain') {
+		if (globalAlgorithmId === "louvain") {
 			options.resolution = louvainResolution;
 		}
 
-		const { palette, communityCount: count } = algo.execute(graphData, options);
+		const { palette: _palette, communityCount: count } = algo.execute(
+			graphData,
+			options,
+		);
+		palette = _palette;
 		communityCount = count;
 		globalEnabled = true;
-		graphData = { ...graphData };
-		
+
+		reapplyColors();
+
 		// Re-calculate representative if a node is currently selected
 		if (selectedNode) {
 			handleNodeClick(selectedNode);
@@ -121,16 +178,26 @@
 		if (!algo) return;
 
 		algo.execute(graphData);
-		graphData = { ...graphData };
+		reapplyColors();
 	}
 </script>
 
 <svelte:head>
 	<title>Obsidian Graph Visualizer</title>
-	<meta name="description" content="2D graph visualization and analytics for Obsidian vaults" />
+	<meta
+		name="description"
+		content="2D graph visualization and analytics for Obsidian vaults"
+	/>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+	<link
+		rel="preconnect"
+		href="https://fonts.gstatic.com"
+		crossorigin="anonymous"
+	/>
+	<link
+		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+		rel="stylesheet"
+	/>
 </svelte:head>
 
 <main id="app-root">
@@ -145,15 +212,36 @@
 	{:else if !loading}
 		<div class="empty-state">
 			<div class="empty-icon">
-				<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-					<circle cx="12" cy="12" r="2" /><circle cx="5" cy="7" r="1.5" />
-					<circle cx="19" cy="7" r="1.5" /><circle cx="5" cy="17" r="1.5" />
+				<svg
+					width="64"
+					height="64"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.2"
+				>
+					<circle cx="12" cy="12" r="2" /><circle
+						cx="5"
+						cy="7"
+						r="1.5"
+					/>
+					<circle cx="19" cy="7" r="1.5" /><circle
+						cx="5"
+						cy="17"
+						r="1.5"
+					/>
 					<circle cx="19" cy="17" r="1.5" />
-					<path d="M7 8l3 3M14 9l3-1M7 16l3-3M14 15l3 1" stroke-dasharray="2 2" />
+					<path
+						d="M7 8l3 3M14 9l3-1M7 16l3-3M14 15l3 1"
+						stroke-dasharray="2 2"
+					/>
 				</svg>
 			</div>
 			<h1>Obsidian Graph Visualizer</h1>
-			<p>Enter your vault path in the settings panel to visualize your knowledge graph.</p>
+			<p>
+				Enter your vault path in the settings panel to visualize your
+				knowledge graph.
+			</p>
 		</div>
 	{/if}
 
@@ -166,6 +254,7 @@
 		bind:globalAlgorithmId
 		bind:louvainResolution
 		bind:metricId
+		bind:blendCommunities
 		{loading}
 		nodeCount={graphData.nodes.length}
 		linkCount={graphData.links.length}
@@ -186,11 +275,18 @@
 
 	{#if errorMsg}
 		<div class="error-toast">
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+			>
 				<circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
 			</svg>
 			{errorMsg}
-			<button onclick={() => (errorMsg = '')}>✕</button>
+			<button onclick={() => (errorMsg = "")}>✕</button>
 		</div>
 	{/if}
 </main>
@@ -201,7 +297,11 @@
 		padding: 0;
 		overflow: hidden;
 		background: #0a0a1a;
-		font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+		font-family:
+			"Inter",
+			-apple-system,
+			BlinkMacSystemFont,
+			sans-serif;
 		color: white;
 		-webkit-font-smoothing: antialiased;
 	}
@@ -221,7 +321,11 @@
 		justify-content: center;
 		text-align: center;
 		padding: 40px;
-		background: radial-gradient(ellipse at center, rgba(60, 70, 140, 0.08) 0%, transparent 70%);
+		background: radial-gradient(
+			ellipse at center,
+			rgba(60, 70, 140, 0.08) 0%,
+			transparent 70%
+		);
 	}
 
 	.empty-icon {
@@ -231,8 +335,13 @@
 	}
 
 	@keyframes float {
-		0%, 100% { transform: translateY(0); }
-		50% { transform: translateY(-10px); }
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-10px);
+		}
 	}
 
 	.empty-state h1 {
@@ -271,8 +380,14 @@
 	}
 
 	@keyframes slideUp {
-		from { opacity: 0; transform: translateX(-50%) translateY(16px); }
-		to { opacity: 1; transform: translateX(-50%) translateY(0); }
+		from {
+			opacity: 0;
+			transform: translateX(-50%) translateY(16px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(-50%) translateY(0);
+		}
 	}
 
 	.error-toast button {
