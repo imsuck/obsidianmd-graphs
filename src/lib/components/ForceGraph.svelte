@@ -127,7 +127,7 @@
 			.graphData(graphData);
 
 		// Tweak default forces to pull nodes closer together
-		graph.d3Force("charge").strength(-100).theta(1.3).distanceMax(750);
+		graph.d3Force("charge").strength(-100).theta(1.3).distanceMax(1000);
 		graph.d3Force("link").distance(75);
 		graph.d3Force("x", d3.forceX().strength(0.1));
 		graph.d3Force("y", d3.forceY().strength(0.1));
