@@ -120,8 +120,8 @@
 			.onBackgroundClick(() => {
 				onBackgroundClick();
 			})
-			.warmupTicks(50)
-			.cooldownTicks(200)
+			.warmupTicks(10)
+			.cooldownTicks(3600) // How long after mouse release until pausing simulation
 			.d3AlphaDecay(0.05)
 			.d3VelocityDecay(0.6)
 			.graphData(graphData);
