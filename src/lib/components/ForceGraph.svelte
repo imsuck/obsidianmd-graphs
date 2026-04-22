@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as d3 from "d3";
 	import { onMount } from "svelte";
 	import type { GraphData, GraphNode } from "$lib/types.js";
 
@@ -114,7 +115,7 @@
 					ctx.fill();
 				},
 			)
-			.linkColor(() => "rgba(120, 140, 200, 0.2)")
+			.linkColor(() => "rgba(120, 140, 200, 0.5)")
 			.linkWidth(0.5)
 			.linkDirectionalArrowLength(showArrows ? 3.5 : 0)
 			.linkDirectionalArrowRelPos(1)
@@ -132,33 +133,11 @@
 			.graphData(graphData);
 
 		// Tweak default forces to pull nodes closer together
-		if (graph.d3Force("charge")) graph.d3Force("charge").strength(-25);
-		if (graph.d3Force("link")) graph.d3Force("link").distance(100);
-
-		// Add circular boundary constraint (like Obsidian)
-		graph.d3Force("boundary", (alpha: number) => {
-			const radius = Math.max(
-				100,
-				Math.sqrt(graphData.nodes.length) * 25,
-			); // Dynamic radius based on node count
-			const strength = alpha * 0.1;
-			const nodes = graphData.nodes;
-			for (let i = 0; i < nodes.length; i++) {
-				const node = nodes[i];
-				if (
-					node.x === undefined ||
-					node.y === undefined ||
-					node.vx === undefined ||
-					node.vy === undefined
-				)
-					continue;
-				const dist = Math.hypot(node.x, node.y);
-				if (dist > radius) {
-					node.vx -= (node.x / dist) * (dist - radius) * strength;
-					node.vy -= (node.y / dist) * (dist - radius) * strength;
-				}
-			}
-		});
+		graph.d3Force("charge").strength(-100);
+		graph.d3Force("link").distance(75);
+		graph.d3Force("x", d3.forceX().strength(0.1));
+		graph.d3Force("y", d3.forceY().strength(0.1));
+		graph.d3Force("collide", d3.forceCollide().radius(25));
 
 		// Handle window resize
 		const resizeObserver = new ResizeObserver(() => {
