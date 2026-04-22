@@ -80,13 +80,7 @@
 								? "oklch(0.55 0.05 250)"
 								: "oklch(0.75 0.14 260)");
 
-					// Glow
-					// ctx.beginPath();
-					// ctx.arc(node.x, node.y, size + 2, 0, 2 * Math.PI);
-					// ctx.fillStyle = color;
-					// ctx.globalAlpha = 0.15;
-					// ctx.fill();
-					// ctx.globalAlpha = 1;
+					if (size * globalScale < 1) return;
 
 					// Node circle
 					ctx.beginPath();
@@ -128,16 +122,16 @@
 			})
 			.warmupTicks(80)
 			.cooldownTicks(200)
-			.d3AlphaDecay(0.02)
+			.d3AlphaDecay(0.05)
 			.d3VelocityDecay(0.3)
 			.graphData(graphData);
 
 		// Tweak default forces to pull nodes closer together
-		graph.d3Force("charge").strength(-100);
+		graph.d3Force("charge").strength(-100).theta(1.3).distanceMax(750);
 		graph.d3Force("link").distance(75);
 		graph.d3Force("x", d3.forceX().strength(0.1));
 		graph.d3Force("y", d3.forceY().strength(0.1));
-		graph.d3Force("collide", d3.forceCollide().radius(25));
+		graph.d3Force("collide", d3.forceCollide().radius(23));
 
 		// Handle window resize
 		const resizeObserver = new ResizeObserver(() => {
