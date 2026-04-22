@@ -40,6 +40,7 @@
 					{selectedNode.type}
 				</span>
 				<h3 class="node-name">{selectedNode.name}</h3>
+				<h5 class="node-value">Value: {selectedNode.val.toFixed(2)}</h5>
 				{#if communityRepresentative && communityRepresentative.id !== selectedNode.id}
 					<button
 						class="representative"
@@ -176,6 +177,10 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	.node-value {
+		color: rgba(255, 255, 255, 0.85);
+		margin: 10px 0;
 	}
 	.representative {
 		display: inline-block;
