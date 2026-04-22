@@ -246,8 +246,8 @@
 		max-height: calc(100vh - 32px);
 		overflow-y: auto;
 		background: rgba(15, 17, 30, 0.75);
-		backdrop-filter: blur(24px);
 		-webkit-backdrop-filter: blur(24px);
+		backdrop-filter: blur(24px);
 		border: 1px solid rgba(255, 255, 255, 0.08);
 		border-radius: 16px;
 		z-index: 100;
