@@ -128,10 +128,10 @@
 
 		// Tweak default forces to pull nodes closer together
 		graph.d3Force("charge").strength(-100).theta(1.0).distanceMax(1000);
-		graph.d3Force("link").distance(75);
-		graph.d3Force("x", d3.forceX().strength(0.1));
-		graph.d3Force("y", d3.forceY().strength(0.1));
-		graph.d3Force("collide", d3.forceCollide().radius(23));
+		// graph.d3Force("link");
+		graph.d3Force("x", d3.forceX().strength(0.075));
+		graph.d3Force("y", d3.forceY().strength(0.075));
+		graph.d3Force("collide", d3.forceCollide().radius(25));
 
 		// Handle window resize
 		const resizeObserver = new ResizeObserver(() => {
