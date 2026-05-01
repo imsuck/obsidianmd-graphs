@@ -38,7 +38,7 @@
 	let graphData = $state<GraphData>({ nodes: [], links: [] });
 	let selectedNode = $state<GraphNode | null>(null);
 	let communityCount = $state(0);
-	let blendCommunities = $state(true);
+	let blendCommunities = $state(false);
 
 	let forceGraphRef: ForceGraph | undefined = $state();
 	let palette = $state<Map<number, string>>();
@@ -51,7 +51,7 @@
 		selectedNode = null;
 		globalEnabled = false;
 		communityCount = 0;
-		blendCommunities = true;
+		blendCommunities = false;
 
 		try {
 			const params = new URLSearchParams({
