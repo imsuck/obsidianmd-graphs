@@ -2,6 +2,13 @@
 	import * as d3 from "d3";
 	import { onMount, untrack } from "svelte";
 	import type { GraphData, GraphNode, LayoutMode } from "$lib/types.js";
+	import { 
+		getNodeBaseColor, 
+		getNodeAlpha, 
+		getLinkAlpha, 
+		getNodeLabel, 
+		getNodeSize 
+	} from "$lib/graph-styles.js";
 
 	let {
 		graphData,
@@ -9,6 +16,7 @@
 		layoutMode = "force",
 		globalEnabled = false,
 		communityRepresentatives = new Map(),
+		selectedNode = $bindable(null),
 		onNodeClick,
 		onBackgroundClick,
 	}: {
@@ -17,6 +25,7 @@
 		layoutMode?: LayoutMode;
 		globalEnabled?: boolean;
 		communityRepresentatives?: Map<number, GraphNode>;
+		selectedNode?: GraphNode | null;
 		onNodeClick: (node: GraphNode) => void;
 		onBackgroundClick: () => void;
 	} = $props();
@@ -24,6 +33,13 @@
 	let container: HTMLDivElement;
 	let graph: any = $state(null);
 	let ForceGraphModule: any = $state(null);
+
+	// Derived config for style functions
+	let styleConfig = $derived({
+		selectedNode,
+		globalEnabled,
+		communityRepresentatives
+	});
 
 	onMount(() => {
 		// Dynamic import since force-graph uses browser APIs
@@ -45,56 +61,23 @@
 
 		graph = ForceGraphModule()(container)
 			.backgroundColor("#0a0a1a")
-			.nodeLabel((node: GraphNode) => {
-				let label = node.name;
-
-				if (globalEnabled && node.community !== undefined) {
-					const rep = communityRepresentatives.get(node.community);
-					if (rep && rep.id !== node.id) {
-						label = `${rep.name} ￫ ${label}`;
-					}
-				}
-
-				const typeLabel =
-					node.type === "tag"
-						? " (tag)"
-						: node.type === "unresolved"
-							? " (unresolved)"
-							: "";
-				return `${label}${typeLabel}`;
-			})
-			.nodeColor((node: GraphNode) => {
-				if (node.color) return node.color;
-				switch (node.type) {
-					case "tag":
-						return "oklch(0.78 0.18 160)";
-					case "unresolved":
-						return "oklch(0.55 0.05 250)";
-					default:
-						return "oklch(0.75 0.14 260)";
-				}
-			})
-			.nodeVal((node: GraphNode) => {
-				const base = node.val ?? 1;
-				if (node.type === "tag") return Math.max(base * 0.6, 0.5);
-				return base;
-			})
+			.nodeLabel((node: GraphNode) => getNodeLabel(node, styleConfig))
+			.nodeColor((node: GraphNode) => getNodeBaseColor(node))
+			.nodeVal((node: GraphNode) => getNodeSize(node))
 			.nodeCanvasObject(
 				(
 					node: any,
 					ctx: CanvasRenderingContext2D,
 					globalScale: number,
 				) => {
-					const size = Math.sqrt(node.val ?? 1) * 3;
-					const color =
-						node.color ??
-						(node.type === "tag"
-							? "oklch(0.78 0.18 160)"
-							: node.type === "unresolved"
-								? "oklch(0.55 0.05 250)"
-								: "oklch(0.75 0.14 260)");
+					const size = Math.sqrt(getNodeSize(node)) * 3;
+					const color = getNodeBaseColor(node);
+					const alpha = getNodeAlpha(node, styleConfig);
 
 					if (size * globalScale < 1) return;
+
+					ctx.save();
+					ctx.globalAlpha = alpha;
 
 					// Node circle
 					ctx.beginPath();
@@ -112,6 +95,7 @@
 						ctx.fillStyle = "rgba(225, 232, 240, 0.85)";
 						ctx.fillText(label, node.x, node.y + size + 2);
 					}
+					ctx.restore();
 				},
 			)
 			.nodePointerAreaPaint(
@@ -123,8 +107,14 @@
 					ctx.fill();
 				},
 			)
-			.linkColor(() => "rgba(120, 140, 200, 0.5)")
-			.linkWidth(0.5)
+			.linkColor((link: any) => {
+				const alpha = getLinkAlpha(link, styleConfig);
+				return `rgba(120, 140, 200, ${alpha})`;
+			})
+			.linkWidth((link: any) => {
+				const alpha = getLinkAlpha(link, styleConfig);
+				return alpha > 0.1 ? 0.5 : 0.2;
+			})
 			.linkDirectionalArrowLength(showArrows ? 3.5 : 0)
 			.linkDirectionalArrowRelPos(1)
 			.onNodeClick((node: GraphNode) => {
@@ -187,7 +177,7 @@
 	let lastNodes: any[] = [];
 	let lastLinks: any[] = [];
 
-	// React to graphData, showArrows, and layoutMode changes
+	// React to graphData, showArrows, layoutMode, and selectedNode changes
 	$effect(() => {
 		if (graph && graphData) {
 			const nodesChanged = graphData.nodes !== lastNodes;
@@ -198,9 +188,17 @@
 				lastNodes = graphData.nodes;
 				lastLinks = graphData.links;
 			} else {
+				// Force a refresh of the canvas for style changes (like highlight)
 				graph.zoom(graph.zoom(), 0);
 			}
 			graph.linkDirectionalArrowLength(showArrows ? 3.5 : 0);
+		}
+	});
+
+	// Trigger refresh when style-impacting state changes
+	$effect(() => {
+		if (graph && (selectedNode || !selectedNode || globalEnabled || !globalEnabled)) {
+			graph.zoom(graph.zoom(), 0);
 		}
 	});
 

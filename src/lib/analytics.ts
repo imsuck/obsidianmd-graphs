@@ -35,28 +35,28 @@ export function getAllCommunityRepresentatives(
   data: GraphData,
 ): Map<number, GraphNode> {
   const reps = new Map<number, GraphNode>();
-  const maxDegrees = new Map<number, number>();
+  const maxValues = new Map<number, number>();
 
+  // Use node.val if available, otherwise fallback to degrees
+  const hasValues = data.nodes.some((n) => n.val !== undefined);
   const degrees = new Map<string, number>();
-  for (const link of data.links) {
-    const src =
-      typeof link.source === "object"
-        ? (link.source as GraphNode).id
-        : link.source;
-    const tgt =
-      typeof link.target === "object"
-        ? (link.target as GraphNode).id
-        : link.target;
-    degrees.set(src, (degrees.get(src) || 0) + 1);
-    degrees.set(tgt, (degrees.get(tgt) || 0) + 1);
+
+  if (!hasValues) {
+    for (const link of data.links) {
+      const src = typeof link.source === "object" ? (link.source as any).id : link.source;
+      const tgt = typeof link.target === "object" ? (link.target as any).id : link.target;
+      degrees.set(src, (degrees.get(src) || 0) + 1);
+      degrees.set(tgt, (degrees.get(tgt) || 0) + 1);
+    }
   }
 
   for (const node of data.nodes) {
     if (node.community !== undefined) {
-      const degree = degrees.get(node.id) || 0;
-      const currentMax = maxDegrees.get(node.community) ?? -1;
-      if (degree > currentMax) {
-        maxDegrees.set(node.community, degree);
+      const val = node.val ?? degrees.get(node.id) ?? 0;
+      const currentMax = maxValues.get(node.community) ?? -Infinity;
+
+      if (val > currentMax) {
+        maxValues.set(node.community, val);
         reps.set(node.community, node);
       }
     }

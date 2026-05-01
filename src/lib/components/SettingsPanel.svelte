@@ -19,7 +19,7 @@
 		nodeCount,
 		linkCount,
 		communityCount,
-		blendCommunities = $bindable(true),
+		blendCommunities = $bindable(false),
 		spectralK = $bindable(5),
 		spectralScale = $bindable(1.0),
 		spectralAspectRatio = $bindable(1.0),
@@ -97,16 +97,16 @@
 			<h2 class="panel-title">Settings</h2>
 
 			<div class="tabs">
-				<button 
-					class="tab-btn" 
+				<button
+					class="tab-btn"
 					class:active={activeTab === "project"}
-					onclick={() => activeTab = "project"}
-				>Project</button>
-				<button 
-					class="tab-btn" 
+					onclick={() => (activeTab = "project")}>Project</button
+				>
+				<button
+					class="tab-btn"
 					class:active={activeTab === "analytics"}
-					onclick={() => activeTab = "analytics"}
-				>Analytics</button>
+					onclick={() => (activeTab = "analytics")}>Analytics</button
+				>
 			</div>
 
 			<div class="tab-content">
@@ -133,11 +133,13 @@
 							>
 							<button
 								class:active={linkMode === "absolute"}
-								onclick={() => (linkMode = "absolute")}>Absolute</button
+								onclick={() => (linkMode = "absolute")}
+								>Absolute</button
 							>
 							<button
 								class:active={linkMode === "relative"}
-								onclick={() => (linkMode = "relative")}>Relative</button
+								onclick={() => (linkMode = "relative")}
+								>Relative</button
 							>
 						</div>
 					</div>
@@ -170,15 +172,24 @@
 						<div class="toggle-group">
 							<button
 								class:active={layoutMode === "force"}
-								onclick={() => { layoutMode = "force"; onApplyLayout(); }}>Force</button
+								onclick={() => {
+									layoutMode = "force";
+									onApplyLayout();
+								}}>Force</button
 							>
 							<button
 								class:active={layoutMode === "spectral"}
-								onclick={() => { layoutMode = "spectral"; onApplyLayout(); }}>Spectral</button
+								onclick={() => {
+									layoutMode = "spectral";
+									onApplyLayout();
+								}}>Spectral</button
 							>
 							<button
 								class:active={layoutMode === "node2vec"}
-								onclick={() => { layoutMode = "node2vec"; onApplyLayout(); }}>Node2Vec</button
+								onclick={() => {
+									layoutMode = "node2vec";
+									onApplyLayout();
+								}}>Node2Vec</button
 							>
 						</div>
 					</div>
@@ -263,7 +274,9 @@
 							onchange={onApplyMetric}
 						>
 							{#each METRIC_ALGORITHMS as metric}
-								<option value={metric.id} title={metric.description}
+								<option
+									value={metric.id}
+									title={metric.description}
 									>{metric.name}</option
 								>
 							{/each}
@@ -292,7 +305,10 @@
 
 					<div class="field">
 						<label class="checkbox-label">
-							<input type="checkbox" bind:checked={blendCommunities} />
+							<input
+								type="checkbox"
+								bind:checked={blendCommunities}
+							/>
 							<span>Blend Communities</span>
 						</label>
 					</div>

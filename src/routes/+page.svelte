@@ -6,13 +6,13 @@
 	import {
 		GLOBAL_ALGORITHMS,
 		METRIC_ALGORITHMS,
-		getAllCommunityRepresentatives,
 	} from "$lib/analytics.js";
-	import type { GraphData, GraphNode, LayoutMode } from "$lib/types.js";
 	import {
-		buildGraphologyGraph,
-		diffuseColors,
-	} from "$lib/algorithms/utils";
+		runCommunityAnalysis,
+		runMetricAnalysis,
+		clearCommunityAnalysis
+	} from "$lib/algorithms-applier.js";
+	import type { GraphData, GraphNode, LayoutMode } from "$lib/types.js";
 	import { applySpectralLayout } from "$lib/layouts/spectral-layout.js";
 	import { applyNode2VecLayout } from "$lib/layouts/node2vec-layout.js";
 
@@ -107,17 +107,12 @@
 
 	function toggleGlobal() {
 		if (globalEnabled) {
-			// Clear communities
-			for (const node of graphData.nodes) {
-				node.community = undefined;
-				node.color = undefined;
-			}
+			clearCommunityAnalysis(graphData);
 			palette = undefined;
 			communityCount = 0;
 			globalEnabled = false;
 			communityRepresentative = null;
 			communityRepresentatives = new Map();
-			// Force re-render
 			graphData = { ...graphData };
 		} else {
 			applyGlobal();
@@ -125,21 +120,8 @@
 	}
 
 	function reapplyColors() {
-		if (!palette || !globalEnabled) return;
-
-		// Reset to base community colors first
-		for (const node of graphData.nodes) {
-			if (node.community !== undefined) {
-				node.color = palette.get(node.community);
-			}
-		}
-
-		if (blendCommunities) {
-			const graph = buildGraphologyGraph(graphData);
-			diffuseColors(graph, graphData, palette);
-		}
-
-		graphData = { ...graphData };
+		if (!globalEnabled) return;
+		applyGlobal();
 	}
 
 	$effect(() => {
@@ -151,9 +133,6 @@
 	});
 
 	function applyGlobal() {
-		const algo = GLOBAL_ALGORITHMS.find((a) => a.id === globalAlgorithmId);
-		if (!algo) return;
-
 		let options: any = {};
 		if (globalAlgorithmId === "louvain") {
 			options.resolution = louvainResolution;
@@ -161,28 +140,30 @@
 			options.k = spectralK;
 		}
 
-		const { palette: _palette, communityCount: count } = algo.execute(
+		const result = runCommunityAnalysis(
 			graphData,
+			globalAlgorithmId,
 			options,
+			blendCommunities
 		);
-		palette = _palette;
-		communityCount = count;
-		globalEnabled = true;
 
-		reapplyColors();
-		communityRepresentatives = getAllCommunityRepresentatives(graphData);
+		if (result) {
+			palette = result.palette;
+			communityCount = result.communityCount;
+			communityRepresentatives = result.representatives;
+			globalEnabled = true;
+			graphData = { ...graphData };
 
-		if (selectedNode) {
-			handleNodeClick(selectedNode);
+			if (selectedNode) {
+				handleNodeClick(selectedNode);
+			}
 		}
 	}
 
 	function applyMetric() {
-		const algo = METRIC_ALGORITHMS.find((a) => a.id === metricId);
-		if (!algo) return;
-
-		algo.execute(graphData);
-		reapplyColors();
+		runMetricAnalysis(graphData, metricId);
+		if (globalEnabled) reapplyColors();
+		else graphData = { ...graphData };
 	}
 
 	function applyLayout() {
@@ -244,6 +225,7 @@
 			{layoutMode}
 			{globalEnabled}
 			{communityRepresentatives}
+			bind:selectedNode
 			onNodeClick={handleNodeClick}
 			onBackgroundClick={handleBackgroundClick}
 		/>
