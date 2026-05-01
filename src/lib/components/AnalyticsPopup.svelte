@@ -40,7 +40,11 @@
 					{selectedNode.type}
 				</span>
 				<h3 class="node-name">{selectedNode.name}</h3>
-				<h5 class="node-value">Value: {selectedNode.val.toFixed(2)}</h5>
+				{#if selectedNode.val}
+					<h5 class="node-value">
+						Value: {selectedNode.val.toFixed(2)}
+					</h5>
+				{/if}
 				{#if communityRepresentative && communityRepresentative.id !== selectedNode.id}
 					<button
 						class="representative"

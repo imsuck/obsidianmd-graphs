@@ -3,6 +3,7 @@
 		GLOBAL_ALGORITHMS,
 		METRIC_ALGORITHMS,
 	} from "$lib/algorithms/index.js";
+	import HybridInput from "./HybridInput.svelte";
 
 	let {
 		vaultPath = $bindable(""),
@@ -13,15 +14,20 @@
 		globalAlgorithmId = $bindable(""),
 		louvainResolution = $bindable(1.0),
 		metricId = $bindable(""),
+		layoutMode = $bindable("force" as "force" | "spectral"),
 		loading,
 		nodeCount,
 		linkCount,
 		communityCount,
 		blendCommunities = $bindable(true),
+		spectralK = $bindable(5),
+		spectralScale = $bindable(1.0),
+		spectralAspectRatio = $bindable(1.0),
 		onLoadVault,
 		onToggleGlobal,
 		onApplyGlobal,
 		onApplyMetric,
+		onApplyLayout,
 	}: {
 		vaultPath: string;
 		linkMode: "auto" | "absolute" | "relative";
@@ -31,18 +37,24 @@
 		globalAlgorithmId: string;
 		louvainResolution: number;
 		metricId: string;
+		layoutMode: "force" | "spectral";
 		loading: boolean;
 		nodeCount: number;
 		linkCount: number;
 		communityCount: number;
 		blendCommunities: boolean;
+		spectralK: number;
+		spectralScale: number;
+		spectralAspectRatio: number;
 		onLoadVault: () => void;
 		onToggleGlobal: () => void;
 		onApplyGlobal: () => void;
 		onApplyMetric: () => void;
+		onApplyLayout: () => void;
 	} = $props();
 
 	let collapsed = $state(false);
+	let activeTab = $state<"project" | "analytics">("project");
 </script>
 
 <div class="settings-panel" class:collapsed>
@@ -76,139 +88,204 @@
 		<div class="panel-content">
 			<h2 class="panel-title">Settings</h2>
 
-			<div class="field">
-				<label for="vault-path">Vault Path</label>
-				<input
-					id="vault-path"
-					type="text"
-					bind:value={vaultPath}
-					placeholder="/path/to/obsidian/vault"
-					onkeydown={(e: KeyboardEvent) => {
-						if (e.key === "Enter") onLoadVault();
-					}}
-				/>
+			<div class="tabs">
+				<button 
+					class="tab-btn" 
+					class:active={activeTab === "project"}
+					onclick={() => activeTab = "project"}
+				>Project</button>
+				<button 
+					class="tab-btn" 
+					class:active={activeTab === "analytics"}
+					onclick={() => activeTab = "analytics"}
+				>Analytics</button>
 			</div>
 
-			<div class="field">
-				<label>Link Resolution</label>
-				<div class="toggle-group">
-					<button
-						class:active={linkMode === "auto"}
-						onclick={() => (linkMode = "auto")}>Auto</button
-					>
-					<button
-						class:active={linkMode === "absolute"}
-						onclick={() => (linkMode = "absolute")}>Absolute</button
-					>
-					<button
-						class:active={linkMode === "relative"}
-						onclick={() => (linkMode = "relative")}>Relative</button
-					>
-				</div>
-			</div>
+			<div class="tab-content">
+				{#if activeTab === "project"}
+					<div class="field">
+						<label for="vault-path">Vault Path</label>
+						<input
+							id="vault-path"
+							type="text"
+							bind:value={vaultPath}
+							placeholder="/path/to/obsidian/vault"
+							onkeydown={(e: KeyboardEvent) => {
+								if (e.key === "Enter") onLoadVault();
+							}}
+						/>
+					</div>
 
-			<div class="field">
-				<label>Tag Mode</label>
-				<div class="toggle-group">
+					<div class="field">
+						<label>Link Resolution</label>
+						<div class="toggle-group">
+							<button
+								class:active={linkMode === "auto"}
+								onclick={() => (linkMode = "auto")}>Auto</button
+							>
+							<button
+								class:active={linkMode === "absolute"}
+								onclick={() => (linkMode = "absolute")}>Absolute</button
+							>
+							<button
+								class:active={linkMode === "relative"}
+								onclick={() => (linkMode = "relative")}>Relative</button
+							>
+						</div>
+					</div>
+
+					<div class="field">
+						<label>Tag Mode</label>
+						<div class="toggle-group">
+							<button
+								class:active={tagMode === "flat"}
+								onclick={() => (tagMode = "flat")}>Flat</button
+							>
+							<button
+								class:active={tagMode === "hierarchical"}
+								onclick={() => (tagMode = "hierarchical")}
+								>Hierarchical</button
+							>
+						</div>
+					</div>
+
+					<div class="field">
+						<label class="checkbox-label">
+							<input type="checkbox" bind:checked={showArrows} />
+							<span>Show Link Directions</span>
+						</label>
+					</div>
+
+					<hr class="divider" />
+					<h3 class="section-title">Layout Engine</h3>
+					<div class="field">
+						<div class="toggle-group">
+							<button
+								class:active={layoutMode === "force"}
+								onclick={() => { layoutMode = "force"; onApplyLayout(); }}>Force</button
+							>
+							<button
+								class:active={layoutMode === "spectral"}
+								onclick={() => { layoutMode = "spectral"; onApplyLayout(); }}>Spectral</button
+							>
+						</div>
+					</div>
+
+					{#if layoutMode === "spectral"}
+						<HybridInput
+							id="spectral-scale"
+							label="Layout Scale"
+							min={0.1}
+							max={3.0}
+							step={0.1}
+							bind:value={spectralScale}
+							onchange={onApplyLayout}
+						/>
+						<HybridInput
+							id="spectral-aspect"
+							label="Aspect Ratio"
+							min={0.1}
+							max={3.0}
+							step={0.1}
+							bind:value={spectralAspectRatio}
+							onchange={onApplyLayout}
+						/>
+					{/if}
+
 					<button
-						class:active={tagMode === "flat"}
-						onclick={() => (tagMode = "flat")}>Flat</button
+						class="load-btn"
+						onclick={onLoadVault}
+						disabled={loading || !vaultPath}
 					>
-					<button
-						class:active={tagMode === "hierarchical"}
-						onclick={() => (tagMode = "hierarchical")}
-						>Hierarchical</button
-					>
-				</div>
-			</div>
-
-			<div class="field">
-				<label class="checkbox-label">
-					<input type="checkbox" bind:checked={showArrows} />
-					<span>Show Link Directions</span>
-				</label>
-			</div>
-
-			<button
-				class="load-btn"
-				onclick={onLoadVault}
-				disabled={loading || !vaultPath}
-			>
-				{#if loading}<span class="spinner"></span> Loading…{:else}Load
-					Vault{/if}
-			</button>
-
-			<hr class="divider" />
-			<h3 class="section-title">Node Radius</h3>
-			<div class="field">
-				<label>Centrality Metric</label>
-				<select
-					class="algo-select"
-					bind:value={metricId}
-					onchange={onApplyMetric}
-				>
-					{#each METRIC_ALGORITHMS as metric}
-						<option value={metric.id} title={metric.description}
-							>{metric.name}</option
+						{#if loading}<span class="spinner"></span> Loading…{:else}Load
+							Vault{/if}
+					</button>
+				{:else if activeTab === "analytics"}
+					<h3 class="section-title">Node Radius</h3>
+					<div class="field">
+						<label>Centrality Metric</label>
+						<select
+							class="algo-select"
+							bind:value={metricId}
+							onchange={onApplyMetric}
 						>
-					{/each}
-				</select>
-			</div>
+							{#each METRIC_ALGORITHMS as metric}
+								<option value={metric.id} title={metric.description}
+									>{metric.name}</option
+								>
+							{/each}
+						</select>
+					</div>
 
-			<hr class="divider" />
-			<h3 class="section-title">Global Analytics</h3>
+					<hr class="divider" />
+					<h3 class="section-title">Global Analytics</h3>
 
-			<div class="field">
-				<label>Algorithm</label>
-				<select
-					class="algo-select"
-					bind:value={globalAlgorithmId}
-					onchange={() => {
-						if (globalEnabled) onApplyGlobal();
-					}}
-				>
-					{#each GLOBAL_ALGORITHMS as algo}
-						<option value={algo.id} title={algo.description}
-							>{algo.name}</option
+					<div class="field">
+						<label>Algorithm</label>
+						<select
+							class="algo-select"
+							bind:value={globalAlgorithmId}
+							onchange={() => {
+								if (globalEnabled) onApplyGlobal();
+							}}
 						>
-					{/each}
-				</select>
-			</div>
+							{#each GLOBAL_ALGORITHMS as algo}
+								<option value={algo.id} title={algo.description}
+									>{algo.name}</option
+								>
+							{/each}
+						</select>
+					</div>
 
-			<div class="field">
-				<label class="checkbox-label">
-					<input type="checkbox" bind:checked={blendCommunities} />
-					<span>Blend Communities</span>
-				</label>
-			</div>
+					<div class="field">
+						<label class="checkbox-label">
+							<input type="checkbox" bind:checked={blendCommunities} />
+							<span>Blend Communities</span>
+						</label>
+					</div>
 
-			<button
-				class="analytics-btn"
-				class:active={globalEnabled}
-				onclick={onToggleGlobal}
-				disabled={nodeCount === 0}
-			>
-				{globalEnabled ? "Clear Analysis" : "Run Analysis"}
-			</button>
-
-			{#if globalAlgorithmId === "louvain"}
-				<div class="field" style="margin-top: 12px;">
-					<label for="resolution-slider"
-						>Resolution: {louvainResolution.toFixed(1)}</label
+					<button
+						class="analytics-btn"
+						class:active={globalEnabled}
+						onclick={onToggleGlobal}
+						disabled={nodeCount === 0}
 					>
-					<input
-						id="resolution-slider"
-						type="range"
-						min="0.1"
-						max="5.0"
-						step="0.1"
-						bind:value={louvainResolution}
-						onchange={() => {
-							if (globalEnabled) onApplyGlobal();
-						}}
-					/>
-				</div>
-			{/if}
+						{globalEnabled ? "Clear Analysis" : "Run Analysis"}
+					</button>
+
+					{#if globalAlgorithmId === "louvain"}
+						<div style="margin-top: 12px;">
+							<HybridInput
+								id="resolution-slider"
+								label="Resolution"
+								min={0.1}
+								max={5.0}
+								step={0.1}
+								bind:value={louvainResolution}
+								onchange={() => {
+									if (globalEnabled) onApplyGlobal();
+								}}
+							/>
+						</div>
+					{/if}
+
+					{#if globalAlgorithmId === "spectral-clustering"}
+						<div style="margin-top: 12px;">
+							<HybridInput
+								id="spectral-k-slider"
+								label="Clusters (k)"
+								min={2}
+								max={20}
+								step={1}
+								bind:value={spectralK}
+								onchange={() => {
+									if (globalEnabled) onApplyGlobal();
+								}}
+							/>
+						</div>
+					{/if}
+				{/if}
+			</div>
 
 			{#if nodeCount > 0}
 				<hr class="divider" />
@@ -294,9 +371,38 @@
 		font-size: 15px;
 		font-weight: 600;
 		color: rgba(255, 255, 255, 0.9);
-		margin: 0 0 20px;
+		margin: 0 0 16px;
 		letter-spacing: 0.02em;
 	}
+
+	.tabs {
+		display: flex;
+		gap: 4px;
+		margin-bottom: 20px;
+		padding: 4px;
+		background: rgba(255, 255, 255, 0.04);
+		border-radius: 12px;
+	}
+
+	.tab-btn {
+		flex: 1;
+		padding: 8px;
+		font-size: 12px;
+		font-weight: 600;
+		background: none;
+		border: none;
+		color: rgba(255, 255, 255, 0.4);
+		cursor: pointer;
+		border-radius: 8px;
+		transition: all 0.2s;
+	}
+
+	.tab-btn.active {
+		background: rgba(255, 255, 255, 0.08);
+		color: white;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+	}
+
 	.section-title {
 		font-size: 12px;
 		font-weight: 600;

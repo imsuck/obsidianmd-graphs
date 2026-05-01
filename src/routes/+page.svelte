@@ -6,13 +6,14 @@
 	import {
 		GLOBAL_ALGORITHMS,
 		METRIC_ALGORITHMS,
-		getCommunityRepresentative,
+		getAllCommunityRepresentatives,
 	} from "$lib/analytics.js";
-	import type { GraphData, GraphNode } from "$lib/types.js";
+	import type { GraphData, GraphNode, LayoutMode } from "$lib/types.js";
 	import {
 		buildGraphologyGraph,
 		diffuseColors,
 	} from "$lib/algorithms/utils";
+	import { applySpectralLayout } from "$lib/layouts/spectral-layout.js";
 
 	let vaultPath = $state("");
 	let linkMode = $state<"auto" | "absolute" | "relative">("auto");
@@ -21,7 +22,11 @@
 	let globalEnabled = $state(false);
 	let globalAlgorithmId = $state(GLOBAL_ALGORITHMS[0].id);
 	let louvainResolution = $state(1.0);
+	let spectralK = $state(5);
+	let spectralScale = $state(1.0);
+	let spectralAspectRatio = $state(1.0);
 	let metricId = $state(METRIC_ALGORITHMS[0].id);
+	let layoutMode = $state<LayoutMode>("force");
 	let showArrows = $state(true);
 	let errorMsg = $state("");
 
@@ -31,8 +36,8 @@
 	let blendCommunities = $state(true);
 
 	let forceGraphRef: ForceGraph | undefined = $state();
-
 	let palette = $state<Map<number, string>>();
+	let communityRepresentatives = $state(new Map<number, GraphNode>());
 
 	async function loadVault() {
 		if (!vaultPath) return;
@@ -58,6 +63,7 @@
 			}
 			graphData = await res.json();
 			applyMetric();
+			if (layoutMode === "spectral") applyLayout();
 		} catch (e: unknown) {
 			errorMsg = e instanceof Error ? e.message : "Failed to load vault";
 			graphData = { nodes: [], links: [] };
@@ -72,10 +78,7 @@
 		selectedNode = node;
 
 		if (globalEnabled && node.community !== undefined) {
-			communityRepresentative = getCommunityRepresentative(
-				graphData,
-				node.community,
-			);
+			communityRepresentative = communityRepresentatives.get(node.community) || null;
 		} else {
 			communityRepresentative = null;
 		}
@@ -108,6 +111,7 @@
 			communityCount = 0;
 			globalEnabled = false;
 			communityRepresentative = null;
+			communityRepresentatives = new Map();
 			// Force re-render
 			graphData = { ...graphData };
 		} else {
@@ -134,8 +138,6 @@
 	}
 
 	$effect(() => {
-		// Reactive redraw on blendCommunities toggle
-		// We untrack to avoid infinite loops when reapplyColors updates graphData
 		if (blendCommunities !== undefined && globalEnabled) {
 			untrack(() => {
 				reapplyColors();
@@ -150,6 +152,8 @@
 		let options: any = {};
 		if (globalAlgorithmId === "louvain") {
 			options.resolution = louvainResolution;
+		} else if (globalAlgorithmId === "spectral-clustering") {
+			options.k = spectralK;
 		}
 
 		const { palette: _palette, communityCount: count } = algo.execute(
@@ -161,8 +165,8 @@
 		globalEnabled = true;
 
 		reapplyColors();
+		communityRepresentatives = getAllCommunityRepresentatives(graphData);
 
-		// Re-calculate representative if a node is currently selected
 		if (selectedNode) {
 			handleNodeClick(selectedNode);
 		}
@@ -174,6 +178,24 @@
 
 		algo.execute(graphData);
 		reapplyColors();
+	}
+
+	function applyLayout() {
+		if (layoutMode === "spectral") {
+			applySpectralLayout(graphData, window.innerWidth, window.innerHeight, {
+				scale: spectralScale,
+				aspectRatio: spectralAspectRatio
+			});
+			graphData = { 
+				nodes: [...graphData.nodes], 
+				links: [...graphData.links] 
+			};
+		} else {
+			graphData = { 
+				nodes: [...graphData.nodes], 
+				links: [...graphData.links] 
+			};
+		}
 	}
 </script>
 
@@ -201,6 +223,9 @@
 			bind:this={forceGraphRef}
 			{graphData}
 			{showArrows}
+			{layoutMode}
+			{globalEnabled}
+			{communityRepresentatives}
 			onNodeClick={handleNodeClick}
 			onBackgroundClick={handleBackgroundClick}
 		/>
@@ -250,6 +275,10 @@
 		bind:louvainResolution
 		bind:metricId
 		bind:blendCommunities
+		bind:layoutMode
+		bind:spectralK
+		bind:spectralScale
+		bind:spectralAspectRatio
 		{loading}
 		nodeCount={graphData.nodes.length}
 		linkCount={graphData.links.length}
@@ -258,6 +287,7 @@
 		onToggleGlobal={toggleGlobal}
 		onApplyGlobal={applyGlobal}
 		onApplyMetric={applyMetric}
+		onApplyLayout={applyLayout}
 	/>
 
 	<AnalyticsPopup

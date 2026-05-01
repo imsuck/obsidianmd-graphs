@@ -1,5 +1,7 @@
 // Shared types for the graph data model
 
+export type LayoutMode = "force" | "spectral";
+
 export interface GraphNode {
   id: string;
   name: string;

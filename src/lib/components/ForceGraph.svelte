@@ -1,16 +1,22 @@
 <script lang="ts">
 	import * as d3 from "d3";
-	import { onMount } from "svelte";
-	import type { GraphData, GraphNode } from "$lib/types.js";
+	import { onMount, untrack } from "svelte";
+	import type { GraphData, GraphNode, LayoutMode } from "$lib/types.js";
 
 	let {
 		graphData,
 		showArrows = true,
+		layoutMode = "force",
+		globalEnabled = false,
+		communityRepresentatives = new Map(),
 		onNodeClick,
 		onBackgroundClick,
 	}: {
 		graphData: GraphData;
 		showArrows?: boolean;
+		layoutMode?: LayoutMode;
+		globalEnabled?: boolean;
+		communityRepresentatives?: Map<number, GraphNode>;
 		onNodeClick: (node: GraphNode) => void;
 		onBackgroundClick: () => void;
 	} = $props();
@@ -40,7 +46,15 @@
 		graph = ForceGraphModule()(container)
 			.backgroundColor("#0a0a1a")
 			.nodeLabel((node: GraphNode) => {
-				const label = node.name;
+				let label = node.name;
+
+				if (globalEnabled && node.community !== undefined) {
+					const rep = communityRepresentatives.get(node.community);
+					if (rep && rep.id !== node.id) {
+						label = `${rep.name} ￫ ${label}`;
+					}
+				}
+
 				const typeLabel =
 					node.type === "tag"
 						? " (tag)"
@@ -102,7 +116,7 @@
 			)
 			.nodePointerAreaPaint(
 				(node: any, color: string, ctx: CanvasRenderingContext2D) => {
-					const size = Math.sqrt(node.val ?? 1) * 3;
+					const size = (node.val ?? 1) + 3;
 					ctx.beginPath();
 					ctx.arc(node.x, node.y, size + 2, 0, 2 * Math.PI);
 					ctx.fillStyle = color;
@@ -120,18 +134,13 @@
 			.onBackgroundClick(() => {
 				onBackgroundClick();
 			})
-			.warmupTicks(10)
+			.warmupTicks(0)
 			.cooldownTicks(3600) // How long after mouse release until pausing simulation
 			.d3AlphaDecay(0.05)
 			.d3VelocityDecay(0.6)
 			.graphData(graphData);
 
-		// Tweak default forces to pull nodes closer together
-		graph.d3Force("charge").strength(-100).theta(1.0).distanceMax(1000);
-		// graph.d3Force("link");
-		graph.d3Force("x", d3.forceX().strength(0.075));
-		graph.d3Force("y", d3.forceY().strength(0.075));
-		graph.d3Force("collide", d3.forceCollide().radius(25));
+		updateForces();
 
 		// Handle window resize
 		const resizeObserver = new ResizeObserver(() => {
@@ -143,10 +152,42 @@
 		resizeObserver.observe(container);
 	}
 
+	function updateForces() {
+		if (!graph) return;
+
+		if (layoutMode === "spectral") {
+			// Disable forces for static layout
+			graph.d3Force("charge", null);
+			graph.d3Force("link", null);
+			graph.d3Force("x", null);
+			graph.d3Force("y", null);
+			graph.d3Force("collide", null);
+			// Re-apply data to ensure fx/fy are respected
+			graph.graphData(graphData);
+		} else {
+			// Restore default forces
+			graph.d3Force(
+				"charge",
+				d3.forceManyBody().strength(-100).theta(1.3),
+			);
+			graph.d3Force("link", d3.forceLink().distance(50));
+			graph.d3Force("x", d3.forceX().strength(0.05));
+			graph.d3Force("y", d3.forceY().strength(0.05));
+			graph.d3Force("collide", d3.forceCollide().radius(20));
+			// Reset fixed positions if switching back to force
+			graphData.nodes.forEach((n) => {
+				n.fx = undefined;
+				n.fy = undefined;
+			});
+			graph.graphData(graphData);
+			graph.d3ReheatSimulation();
+		}
+	}
+
 	let lastNodes: any[] = [];
 	let lastLinks: any[] = [];
 
-	// React to graphData and showArrows changes
+	// React to graphData, showArrows, and layoutMode changes
 	$effect(() => {
 		if (graph && graphData) {
 			const nodesChanged = graphData.nodes !== lastNodes;
@@ -157,13 +198,15 @@
 				lastNodes = graphData.nodes;
 				lastLinks = graphData.links;
 			} else {
-				// Only attributes (color, size) changed.
-				// Since nodeCanvasObject reads directly from node objects,
-				// we just need to trigger a single frame redraw if the simulation is paused.
-				// A zero-duration zoom to the current level is a safe way to trigger a repaint in 2D force-graph.
 				graph.zoom(graph.zoom(), 0);
 			}
 			graph.linkDirectionalArrowLength(showArrows ? 3.5 : 0);
+		}
+	});
+
+	$effect(() => {
+		if (graph && layoutMode) {
+			untrack(() => updateForces());
 		}
 	});
 

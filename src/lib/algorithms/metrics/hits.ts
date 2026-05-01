@@ -9,7 +9,23 @@ export const HITSHubsMetric: MetricAlgorithm = {
   execute: (data: GraphData) => {
     if (data.nodes.length === 0) return;
     const graph = buildGraphologyGraph(data);
-    const { hubs } = hits(graph);
+
+    let results: { hubs: { [key: string]: number }, authorities: { [key: string]: number } };
+    try {
+      results = hits(graph, {
+        maxIterations: 500,
+        tolerance: 1e-6,
+        getEdgeWeight: 1,
+      });
+    } catch (e) {
+      console.warn("HITS failed to converge, falling back to 0 scores:", e);
+      results = { hubs: {}, authorities: {} };
+      for (const node of data.nodes) {
+        results.hubs[node.id] = 0;
+        results.authorities[node.id] = 0;
+      }
+    }
+    const { hubs } = results;
 
     const values = Object.values(hubs);
     const maxScore = values.length > 0 ? Math.max(...values) : 0;
@@ -28,7 +44,23 @@ export const HITSAuthoritiesMetric: MetricAlgorithm = {
   execute: (data: GraphData) => {
     if (data.nodes.length === 0) return;
     const graph = buildGraphologyGraph(data);
-    const { authorities } = hits(graph);
+
+    let results: { hubs: { [key: string]: number }, authorities: { [key: string]: number } };
+    try {
+      results = hits(graph, {
+        maxIterations: 500,
+        tolerance: 1e-6,
+        getEdgeWeight: undefined
+      });
+    } catch (e) {
+      console.warn("HITS failed to converge, falling back to 0 scores:", e);
+      results = { hubs: {}, authorities: {} };
+      for (const node of data.nodes) {
+        results.hubs[node.id] = 0;
+        results.authorities[node.id] = 0;
+      }
+    }
+    const { authorities } = results;
 
     const values = Object.values(authorities);
     const maxScore = values.length > 0 ? Math.max(...values) : 0;

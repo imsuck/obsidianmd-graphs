@@ -16,6 +16,7 @@
     "@sveltejs/adapter-auto": "^7.0.1",
     "@sveltejs/kit": "^2.57.0",
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "@types/d3": "^7.4.3",
     "@types/node": "^25.6.0",
     "svelte": "^5.55.2",
     "svelte-check": "^4.4.6",
@@ -30,6 +31,8 @@
     "graphology-communities-louvain": "^2.0.2",
     "graphology-metrics": "^2.4.0",
     "graphology-traversal": "^0.3.1",
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "ml-kmeans": "^7.0.0",
+    "ml-matrix": "^6.12.2"
   }
 }

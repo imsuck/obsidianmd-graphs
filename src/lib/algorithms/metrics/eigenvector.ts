@@ -9,7 +9,21 @@ export const EigenvectorMetric: MetricAlgorithm = {
   execute: (data: GraphData) => {
     if (data.nodes.length === 0) return;
     const graph = buildGraphologyGraph(data);
-    const scores = eigenvector(graph);
+    
+    let scores: { [key: string]: number };
+    try {
+      scores = eigenvector(graph, {
+        maxIterations: 500,
+        tolerance: 1e-6,
+        getEdgeWeight: undefined
+      });
+    } catch (e) {
+      console.warn("Eigenvector centrality failed to converge, falling back to 0 scores:", e);
+      scores = {};
+      for (const node of data.nodes) {
+        scores[node.id] = 0;
+      }
+    }
 
     const values = Object.values(scores);
     const maxScore = values.length > 0 ? Math.max(...values) : 0;

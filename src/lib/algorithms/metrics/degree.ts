@@ -18,8 +18,14 @@ export const DegreeMetric: MetricAlgorithm = {
       degreeCounts.set(src, (degreeCounts.get(src) ?? 0) + 1);
       degreeCounts.set(tgt, (degreeCounts.get(tgt) ?? 0) + 1);
     }
+    const values = Array.from(degreeCounts.values());
+    const maxDeg = values.length > 0 ? Math.max(...values) : 0;
     for (const node of data.nodes) {
-      node.val = Math.max(1, Math.sqrt(degreeCounts.get(node.id) ?? 1));
+      // lerp from 1 to 20^2 then sqrt down to 1 to 20
+      const degree = degreeCounts.get(node.id) ?? 1;
+      const normalized = (degree - 1) / (maxDeg - 1);
+      const scaled = normalized * (20 * 20 - 1) + 1;
+      node.val = Math.max(1, Math.sqrt(scaled));
     }
   },
 };

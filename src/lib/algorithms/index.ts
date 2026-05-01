@@ -7,6 +7,7 @@ import { ClusteringCoefficientAlgorithm } from "./local/clustering-coefficient.j
 import { LouvainAlgorithm } from "./global/louvain.js";
 import { LabelPropagationAlgorithm } from "./global/label-propagation.js";
 import { KCoreAlgorithm } from "./global/k-core.js";
+import { SpectralClusteringAlgorithm } from "./global/spectral-clustering.js";
 import { METRIC_ALGORITHMS } from "./metrics/index.js";
 
 export const LOCAL_ALGORITHMS = [
@@ -21,6 +22,7 @@ export const GLOBAL_ALGORITHMS = [
   LouvainAlgorithm,
   LabelPropagationAlgorithm,
   KCoreAlgorithm,
+  SpectralClusteringAlgorithm,
 ];
 
 export { METRIC_ALGORITHMS };
@@ -34,4 +36,5 @@ export {
   LouvainAlgorithm,
   LabelPropagationAlgorithm,
   KCoreAlgorithm,
+  SpectralClusteringAlgorithm,
 };

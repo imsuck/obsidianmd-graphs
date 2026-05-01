@@ -24,8 +24,18 @@ export function getCommunityRepresentative(
   data: GraphData,
   communityId: number,
 ): GraphNode | null {
-  let maxDegree = -1;
-  let representative: GraphNode | null = null;
+  const reps = getAllCommunityRepresentatives(data);
+  return reps.get(communityId) || null;
+}
+
+/**
+ * Gets the representatives of all communities.
+ */
+export function getAllCommunityRepresentatives(
+  data: GraphData,
+): Map<number, GraphNode> {
+  const reps = new Map<number, GraphNode>();
+  const maxDegrees = new Map<number, number>();
 
   const degrees = new Map<string, number>();
   for (const link of data.links) {
@@ -42,16 +52,17 @@ export function getCommunityRepresentative(
   }
 
   for (const node of data.nodes) {
-    if (node.community === communityId) {
+    if (node.community !== undefined) {
       const degree = degrees.get(node.id) || 0;
-      if (degree > maxDegree) {
-        maxDegree = degree;
-        representative = node;
+      const currentMax = maxDegrees.get(node.community) ?? -1;
+      if (degree > currentMax) {
+        maxDegrees.set(node.community, degree);
+        reps.set(node.community, node);
       }
     }
   }
 
-  return representative;
+  return reps;
 }
 
 export { LOCAL_ALGORITHMS, GLOBAL_ALGORITHMS, METRIC_ALGORITHMS };
