@@ -23,6 +23,10 @@
 		spectralK = $bindable(5),
 		spectralScale = $bindable(1.0),
 		spectralAspectRatio = $bindable(1.0),
+		node2vecP = $bindable(1.0),
+		node2vecQ = $bindable(1.0),
+		node2vecIterations = $bindable(5),
+		node2vecWalkLength = $bindable(20),
 		onLoadVault,
 		onToggleGlobal,
 		onApplyGlobal,
@@ -37,7 +41,7 @@
 		globalAlgorithmId: string;
 		louvainResolution: number;
 		metricId: string;
-		layoutMode: "force" | "spectral";
+		layoutMode: "force" | "spectral" | "node2vec";
 		loading: boolean;
 		nodeCount: number;
 		linkCount: number;
@@ -46,6 +50,10 @@
 		spectralK: number;
 		spectralScale: number;
 		spectralAspectRatio: number;
+		node2vecP: number;
+		node2vecQ: number;
+		node2vecIterations: number;
+		node2vecWalkLength: number;
 		onLoadVault: () => void;
 		onToggleGlobal: () => void;
 		onApplyGlobal: () => void;
@@ -168,6 +176,10 @@
 								class:active={layoutMode === "spectral"}
 								onclick={() => { layoutMode = "spectral"; onApplyLayout(); }}>Spectral</button
 							>
+							<button
+								class:active={layoutMode === "node2vec"}
+								onclick={() => { layoutMode = "node2vec"; onApplyLayout(); }}>Node2Vec</button
+							>
 						</div>
 					</div>
 
@@ -188,6 +200,47 @@
 							max={3.0}
 							step={0.1}
 							bind:value={spectralAspectRatio}
+							onchange={onApplyLayout}
+						/>
+					{/if}
+
+					{#if layoutMode === "node2vec"}
+						<div class="grid-2">
+							<HybridInput
+								id="n2v-p"
+								label="P (Return)"
+								min={0.1}
+								max={5.0}
+								step={0.1}
+								bind:value={node2vecP}
+								onchange={onApplyLayout}
+							/>
+							<HybridInput
+								id="n2v-q"
+								label="Q (In-Out)"
+								min={0.1}
+								max={5.0}
+								step={0.1}
+								bind:value={node2vecQ}
+								onchange={onApplyLayout}
+							/>
+						</div>
+						<HybridInput
+							id="n2v-iter"
+							label="Iterations"
+							min={1}
+							max={50}
+							step={1}
+							bind:value={node2vecIterations}
+							onchange={onApplyLayout}
+						/>
+						<HybridInput
+							id="n2v-walk"
+							label="Walk Length"
+							min={5}
+							max={100}
+							step={5}
+							bind:value={node2vecWalkLength}
 							onchange={onApplyLayout}
 						/>
 					{/if}
@@ -555,6 +608,12 @@
 		border: none;
 		border-top: 1px solid rgba(255, 255, 255, 0.06);
 		margin: 16px 0;
+	}
+
+	.grid-2 {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
 	}
 
 	.stats {

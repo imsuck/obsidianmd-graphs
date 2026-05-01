@@ -155,7 +155,7 @@
 	function updateForces() {
 		if (!graph) return;
 
-		if (layoutMode === "spectral") {
+		if (layoutMode === "spectral" || layoutMode === "node2vec") {
 			// Disable forces for static layout
 			graph.d3Force("charge", null);
 			graph.d3Force("link", null);

@@ -1,6 +1,6 @@
 // Shared types for the graph data model
 
-export type LayoutMode = "force" | "spectral";
+export type LayoutMode = "force" | "spectral" | "node2vec";
 
 export interface GraphNode {
   id: string;

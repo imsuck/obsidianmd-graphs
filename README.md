@@ -25,6 +25,6 @@
 We plan to implement the following additional graph analytic algorithms in the future:
 
 - [x] **PageRank**: Measure the relative importance of notes based on link structure.
-- [ ] **Node2Vec**: Generate continuous vector embeddings for notes based on network structure.
+- [x] **Node2Vec**: Generate continuous vector embeddings for notes based on network structure.
 - [ ] **Walktrap**: Community detection using short random walks.
 - [ ] Highlight nodes in the same community when hovering over a node (or maybe selected).

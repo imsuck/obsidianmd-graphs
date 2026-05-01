@@ -14,6 +14,7 @@
 		diffuseColors,
 	} from "$lib/algorithms/utils";
 	import { applySpectralLayout } from "$lib/layouts/spectral-layout.js";
+	import { applyNode2VecLayout } from "$lib/layouts/node2vec-layout.js";
 
 	let vaultPath = $state("");
 	let linkMode = $state<"auto" | "absolute" | "relative">("auto");
@@ -25,6 +26,10 @@
 	let spectralK = $state(5);
 	let spectralScale = $state(1.0);
 	let spectralAspectRatio = $state(1.0);
+	let node2vecP = $state(1.0);
+	let node2vecQ = $state(1.0);
+	let node2vecIterations = $state(5);
+	let node2vecWalkLength = $state(20);
 	let metricId = $state(METRIC_ALGORITHMS[0].id);
 	let layoutMode = $state<LayoutMode>("force");
 	let showArrows = $state(true);
@@ -63,7 +68,7 @@
 			}
 			graphData = await res.json();
 			applyMetric();
-			if (layoutMode === "spectral") applyLayout();
+			if (layoutMode === "spectral" || layoutMode === "node2vec") applyLayout();
 		} catch (e: unknown) {
 			errorMsg = e instanceof Error ? e.message : "Failed to load vault";
 			graphData = { nodes: [], links: [] };
@@ -190,6 +195,19 @@
 				nodes: [...graphData.nodes], 
 				links: [...graphData.links] 
 			};
+		} else if (layoutMode === "node2vec") {
+			applyNode2VecLayout(graphData, window.innerWidth, window.innerHeight, {
+				p: node2vecP,
+				q: node2vecQ,
+				iterations: node2vecIterations,
+				walkLength: node2vecWalkLength,
+				scale: spectralScale, // Re-use spectral scale for simplicity
+				aspectRatio: spectralAspectRatio
+			});
+			graphData = { 
+				nodes: [...graphData.nodes], 
+				links: [...graphData.links] 
+			};
 		} else {
 			graphData = { 
 				nodes: [...graphData.nodes], 
@@ -279,6 +297,10 @@
 		bind:spectralK
 		bind:spectralScale
 		bind:spectralAspectRatio
+		bind:node2vecP
+		bind:node2vecQ
+		bind:node2vecIterations
+		bind:node2vecWalkLength
 		{loading}
 		nodeCount={graphData.nodes.length}
 		linkCount={graphData.links.length}
