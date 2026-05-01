@@ -11,30 +11,30 @@ import { SpectralClusteringAlgorithm } from "./global/spectral-clustering.js";
 import { METRIC_ALGORITHMS } from "./metrics/index.js";
 
 export const LOCAL_ALGORITHMS = [
-  CoCitationAlgorithm,
-  AdamicAdarAlgorithm,
-  JaccardAlgorithm,
-  OverlapAlgorithm,
-  ClusteringCoefficientAlgorithm,
+    CoCitationAlgorithm,
+    AdamicAdarAlgorithm,
+    JaccardAlgorithm,
+    OverlapAlgorithm,
+    ClusteringCoefficientAlgorithm,
 ];
 
 export const GLOBAL_ALGORITHMS = [
-  LouvainAlgorithm,
-  LabelPropagationAlgorithm,
-  KCoreAlgorithm,
-  SpectralClusteringAlgorithm,
+    LouvainAlgorithm,
+    LabelPropagationAlgorithm,
+    KCoreAlgorithm,
+    SpectralClusteringAlgorithm,
 ];
 
 export { METRIC_ALGORITHMS };
 
 export {
-  CoCitationAlgorithm,
-  AdamicAdarAlgorithm,
-  JaccardAlgorithm,
-  OverlapAlgorithm,
-  ClusteringCoefficientAlgorithm,
-  LouvainAlgorithm,
-  LabelPropagationAlgorithm,
-  KCoreAlgorithm,
-  SpectralClusteringAlgorithm,
+    CoCitationAlgorithm,
+    AdamicAdarAlgorithm,
+    JaccardAlgorithm,
+    OverlapAlgorithm,
+    ClusteringCoefficientAlgorithm,
+    LouvainAlgorithm,
+    LabelPropagationAlgorithm,
+    KCoreAlgorithm,
+    SpectralClusteringAlgorithm,
 };
