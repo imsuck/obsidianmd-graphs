@@ -38,6 +38,9 @@ importers:
       ml-matrix:
         specifier: ^6.12.2
         version: 6.12.2
+      umap-js:
+        specifier: ^1.4.0
+        version: 1.4.0
     devDependencies:
       '@sveltejs/adapter-auto':
         specifier: ^7.0.1
@@ -658,6 +661,9 @@ packages:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
 
+  is-any-array@0.1.1:
+    resolution: {integrity: sha512-qTiELO+kpTKqPgxPYbshMERlzaFu29JDnpB8s3bjg+JkxBpw29/qqSaOdKv2pCdaG92rLGeG/zG2GauX58hfoA==}
+
   is-any-array@3.0.0:
     resolution: {integrity: sha512-o4h+tylWykC4BD1vaejp6gDxoM13bwW8FGuNs4yIKpj8xbBJcRxJx8vZpq0dCr7ZDEfeKjmsi/euolKhX6f/ww==}
 
@@ -781,6 +787,9 @@ packages:
 
   ml-kmeans@7.0.0:
     resolution: {integrity: sha512-Ud8x4YMURVgupAcuSxD9iwc/us4mqyryFnx08gjEGfAyP1iWlJSdBADD96PlpkpHUvRVDNEmk28euGQJZeuU7A==}
+
+  ml-levenberg-marquardt@2.1.1:
+    resolution: {integrity: sha512-2+HwUqew4qFFFYujYlQtmFUrxCB4iJAPqnUYro3P831wj70eJZcANwcRaIMGUVaH9NDKzfYuA4N5u67KExmaRA==}
 
   ml-matrix@6.12.2:
     resolution: {integrity: sha512-GC+BnW+pBh8Auap8goAxY0senAmF0IEoc3HNVSfnfbvGw0buuDIYb9kAKMS1l+GiwJ1rfK2bzJ8IHhwjzATSFA==}
@@ -912,6 +921,9 @@ packages:
     resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
     hasBin: true
+
+  umap-js@1.4.0:
+    resolution: {integrity: sha512-xxpviF9wUO6Nxrx+C58SoDgea+h2PnVaRPKDelWv0HotmY6BeWeh0kAPJoumfqUkzUvowGsYfMbnsWI0b9do+A==}
 
   undici-types@7.19.2:
     resolution: {integrity: sha512-qYVnV5OEm2AW8cJMCpdV20CDyaN3g0AjDlOGf1OW4iaDEx8MwdtChUp4zu4H0VP3nDRF/8RKWH+IPp9uW0YGZg==}
@@ -1558,6 +1570,8 @@ snapshots:
 
   internmap@2.0.3: {}
 
+  is-any-array@0.1.1: {}
+
   is-any-array@3.0.0: {}
 
   is-extendable@0.1.1: {}
@@ -1658,6 +1672,11 @@ snapshots:
       ml-matrix: 6.12.2
       ml-nearest-vector: 3.0.1
       ml-random: 2.0.0
+
+  ml-levenberg-marquardt@2.1.1:
+    dependencies:
+      is-any-array: 0.1.1
+      ml-matrix: 6.12.2
 
   ml-matrix@6.12.2:
     dependencies:
@@ -1804,6 +1823,10 @@ snapshots:
     optional: true
 
   typescript@6.0.3: {}
+
+  umap-js@1.4.0:
+    dependencies:
+      ml-levenberg-marquardt: 2.1.1
 
   undici-types@7.19.2: {}
 

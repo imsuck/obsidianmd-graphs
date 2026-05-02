@@ -27,6 +27,8 @@
 		node2vecQ = $bindable(1.0),
 		node2vecIterations = $bindable(5),
 		node2vecWalkLength = $bindable(20),
+		collapsed = $bindable(false),
+		activeTab = $bindable("project" as "project" | "analytics"),
 		onLoadVault,
 		onToggleGlobal,
 		onApplyGlobal,
@@ -54,15 +56,14 @@
 		node2vecQ: number;
 		node2vecIterations: number;
 		node2vecWalkLength: number;
+		collapsed: boolean;
+		activeTab: "project" | "analytics";
 		onLoadVault: () => void;
 		onToggleGlobal: () => void;
 		onApplyGlobal: () => void;
 		onApplyMetric: () => void;
 		onApplyLayout: () => void;
 	} = $props();
-
-	let collapsed = $state(false);
-	let activeTab = $state<"project" | "analytics">("project");
 </script>
 
 <div class="settings-panel" class:collapsed>

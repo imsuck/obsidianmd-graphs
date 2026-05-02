@@ -4,10 +4,6 @@
 	import SettingsPanel from "$lib/components/SettingsPanel.svelte";
 	import AnalyticsPopup from "$lib/components/AnalyticsPopup.svelte";
 	import {
-		GLOBAL_ALGORITHMS,
-		METRIC_ALGORITHMS,
-	} from "$lib/analytics.js";
-	import {
 		runCommunityAnalysis,
 		runMetricAnalysis,
 		clearCommunityAnalysis
@@ -15,49 +11,38 @@
 	import type { GraphData, GraphNode, LayoutMode } from "$lib/types.js";
 	import { applySpectralLayout } from "$lib/layouts/spectral-layout.js";
 	import { applyNode2VecLayout } from "$lib/layouts/node2vec-layout.js";
+	import { settings } from "$lib/settings.svelte.js";
 
-	let vaultPath = $state("");
-	let linkMode = $state<"auto" | "absolute" | "relative">("auto");
-	let tagMode = $state<"flat" | "hierarchical">("flat");
 	let loading = $state(false);
 	let globalEnabled = $state(false);
-	let globalAlgorithmId = $state(GLOBAL_ALGORITHMS[0].id);
-	let louvainResolution = $state(1.0);
-	let spectralK = $state(5);
-	let spectralScale = $state(1.0);
-	let spectralAspectRatio = $state(1.0);
-	let node2vecP = $state(1.0);
-	let node2vecQ = $state(1.0);
-	let node2vecIterations = $state(5);
-	let node2vecWalkLength = $state(20);
-	let metricId = $state(METRIC_ALGORITHMS[0].id);
-	let layoutMode = $state<LayoutMode>("force");
-	let showArrows = $state(true);
 	let errorMsg = $state("");
 
 	let graphData = $state<GraphData>({ nodes: [], links: [] });
 	let selectedNode = $state<GraphNode | null>(null);
 	let communityCount = $state(0);
-	let blendCommunities = $state(false);
 
 	let forceGraphRef: ForceGraph | undefined = $state();
 	let palette = $state<Map<number, string>>();
 	let communityRepresentatives = $state(new Map<number, GraphNode>());
 
+	$effect(() => {
+		settings.save();
+	});
+
 	async function loadVault() {
-		if (!vaultPath) return;
+		if (!settings.vaultPath) return;
 		loading = true;
 		errorMsg = "";
 		selectedNode = null;
 		globalEnabled = false;
 		communityCount = 0;
-		blendCommunities = false;
+		settings.blendCommunities = false;
 
 		try {
 			const params = new URLSearchParams({
-				vault: vaultPath,
-				linkMode,
-				tagMode,
+				vault: settings.vaultPath,
+				linkMode: settings.linkMode,
+				tagMode: settings.tagMode,
 			});
 			const res = await fetch(`/api/graph?${params}`);
 			if (!res.ok) {
@@ -68,7 +53,7 @@
 			}
 			graphData = await res.json();
 			applyMetric();
-			if (layoutMode === "spectral" || layoutMode === "node2vec") applyLayout();
+			if (settings.layoutMode === "spectral" || settings.layoutMode === "node2vec") await applyLayout();
 		} catch (e: unknown) {
 			errorMsg = e instanceof Error ? e.message : "Failed to load vault";
 			graphData = { nodes: [], links: [] };
@@ -125,7 +110,7 @@
 	}
 
 	$effect(() => {
-		if (blendCommunities !== undefined && globalEnabled) {
+		if (settings.blendCommunities !== undefined && globalEnabled) {
 			untrack(() => {
 				reapplyColors();
 			});
@@ -134,17 +119,17 @@
 
 	function applyGlobal() {
 		let options: any = {};
-		if (globalAlgorithmId === "louvain") {
-			options.resolution = louvainResolution;
-		} else if (globalAlgorithmId === "spectral-clustering") {
-			options.k = spectralK;
+		if (settings.globalAlgorithmId === "louvain") {
+			options.resolution = settings.louvainResolution;
+		} else if (settings.globalAlgorithmId === "spectral-clustering") {
+			options.k = settings.spectralK;
 		}
 
 		const result = runCommunityAnalysis(
 			graphData,
-			globalAlgorithmId,
+			settings.globalAlgorithmId,
 			options,
-			blendCommunities
+			settings.blendCommunities
 		);
 
 		if (result) {
@@ -161,34 +146,42 @@
 	}
 
 	function applyMetric() {
-		runMetricAnalysis(graphData, metricId);
+		runMetricAnalysis(graphData, settings.metricId);
 		if (globalEnabled) reapplyColors();
 		else graphData = { ...graphData };
 	}
 
-	function applyLayout() {
-		if (layoutMode === "spectral") {
+	async function applyLayout() {
+		if (settings.layoutMode === "spectral") {
 			applySpectralLayout(graphData, window.innerWidth, window.innerHeight, {
-				scale: spectralScale,
-				aspectRatio: spectralAspectRatio
+				scale: settings.spectralScale,
+				aspectRatio: settings.spectralAspectRatio
 			});
 			graphData = { 
 				nodes: [...graphData.nodes], 
 				links: [...graphData.links] 
 			};
-		} else if (layoutMode === "node2vec") {
-			applyNode2VecLayout(graphData, window.innerWidth, window.innerHeight, {
-				p: node2vecP,
-				q: node2vecQ,
-				iterations: node2vecIterations,
-				walkLength: node2vecWalkLength,
-				scale: spectralScale, // Re-use spectral scale for simplicity
-				aspectRatio: spectralAspectRatio
-			});
-			graphData = { 
-				nodes: [...graphData.nodes], 
-				links: [...graphData.links] 
-			};
+		} else if (settings.layoutMode === "node2vec") {
+			loading = true;
+			try {
+				await applyNode2VecLayout(graphData, window.innerWidth, window.innerHeight, {
+					p: settings.node2vecP,
+					q: settings.node2vecQ,
+					iterations: settings.node2vecIterations,
+					walkLength: settings.node2vecWalkLength,
+					scale: settings.spectralScale, // Re-use spectral scale for simplicity
+					aspectRatio: settings.spectralAspectRatio
+				});
+				graphData = { 
+					nodes: [...graphData.nodes], 
+					links: [...graphData.links] 
+				};
+			} catch (e) {
+				console.error("Node2Vec layout failed:", e);
+				errorMsg = "Node2Vec layout failed";
+			} finally {
+				loading = false;
+			}
 		} else {
 			graphData = { 
 				nodes: [...graphData.nodes], 
@@ -221,8 +214,8 @@
 		<ForceGraph
 			bind:this={forceGraphRef}
 			{graphData}
-			{showArrows}
-			{layoutMode}
+			showArrows={settings.showArrows}
+			layoutMode={settings.layoutMode}
 			{globalEnabled}
 			{communityRepresentatives}
 			bind:selectedNode
@@ -266,23 +259,25 @@
 	{/if}
 
 	<SettingsPanel
-		bind:vaultPath
-		bind:linkMode
-		bind:tagMode
-		bind:showArrows
+		bind:vaultPath={settings.vaultPath}
+		bind:linkMode={settings.linkMode}
+		bind:tagMode={settings.tagMode}
+		bind:showArrows={settings.showArrows}
 		bind:globalEnabled
-		bind:globalAlgorithmId
-		bind:louvainResolution
-		bind:metricId
-		bind:blendCommunities
-		bind:layoutMode
-		bind:spectralK
-		bind:spectralScale
-		bind:spectralAspectRatio
-		bind:node2vecP
-		bind:node2vecQ
-		bind:node2vecIterations
-		bind:node2vecWalkLength
+		bind:globalAlgorithmId={settings.globalAlgorithmId}
+		bind:louvainResolution={settings.louvainResolution}
+		bind:metricId={settings.metricId}
+		bind:blendCommunities={settings.blendCommunities}
+		bind:layoutMode={settings.layoutMode}
+		bind:spectralK={settings.spectralK}
+		bind:spectralScale={settings.spectralScale}
+		bind:spectralAspectRatio={settings.spectralAspectRatio}
+		bind:node2vecP={settings.node2vecP}
+		bind:node2vecQ={settings.node2vecQ}
+		bind:node2vecIterations={settings.node2vecIterations}
+		bind:node2vecWalkLength={settings.node2vecWalkLength}
+		bind:collapsed={settings.collapsed}
+		bind:activeTab={settings.activeTab}
 		{loading}
 		nodeCount={graphData.nodes.length}
 		linkCount={graphData.links.length}

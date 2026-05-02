@@ -1,10 +1,11 @@
-import { trainNode2Vec } from "../algorithms/node2vec.js";
 import type { GraphData } from "../types.js";
+import Node2VecWorker from "./node2vec.worker.js?worker";
 
 /**
- * Applies Node2Vec layout to the graph data.
+ * Applies Node2Vec layout to the graph data using a Web Worker.
+ * Returns a Promise that resolves when the layout is complete.
  */
-export function applyNode2VecLayout(
+export async function applyNode2VecLayout(
     data: GraphData,
     width: number,
     height: number,
@@ -16,70 +17,54 @@ export function applyNode2VecLayout(
         iterations?: number;
         walkLength?: number;
     } = {},
-) {
-    const {
-        scale = 1.0,
-        aspectRatio = 1.0,
-        p = 1.0,
-        q = 1.0,
-        iterations = 5,
-        walkLength = 20,
-    } = options;
-
+): Promise<GraphData> {
     const n = data.nodes.length;
     if (n === 0) return data;
 
-    // We train in 2D directly for layout purposes
-    const embeddings = trainNode2Vec(data, 2, {
-        p,
-        q,
-        iterations,
-        walkLength,
-        walksPerNode: 5, // Keep it relatively fast
-    });
+    return new Promise((resolve, reject) => {
+        try {
+            const worker = new Node2VecWorker();
 
-    const nodePositions = new Map<string, { x: number; y: number }>();
+            worker.postMessage({
+                data: {
+                    nodes: data.nodes.map((n) => ({ id: n.id })),
+                    links: data.links.map((l) => ({
+                        source:
+                            typeof l.source === "string"
+                                ? l.source
+                                : l.source.id,
+                        target:
+                            typeof l.target === "string"
+                                ? l.target
+                                : l.target.id,
+                    })),
+                },
+                width,
+                height,
+                options,
+            });
 
-    let minX = Infinity,
-        maxX = -Infinity;
-    let minY = Infinity,
-        maxY = -Infinity;
+            worker.onmessage = (e) => {
+                const { nodePositions } = e.data;
 
-    embeddings.forEach((coords, id) => {
-        const x = coords[0];
-        const y = coords[1];
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-    });
+                data.nodes.forEach((node) => {
+                    const pos = nodePositions[node.id];
+                    if (pos) {
+                        node.fx = pos.x;
+                        node.fy = pos.y;
+                    }
+                });
 
-    const rangeX = maxX - minX > 1e-6 ? maxX - minX : 1;
-    const rangeY = maxY - minY > 1e-6 ? maxY - minY : 1;
+                worker.terminate();
+                resolve(data);
+            };
 
-    const padding = 100;
-    const drawWidth = (width - padding * 2) * scale;
-    const drawHeight = (height - padding * 2) * scale;
-
-    embeddings.forEach((coords, id) => {
-        const normX = (coords[0] - minX) / rangeX;
-        const normY = (coords[1] - minY) / rangeY;
-
-        const jitter = (Math.random() - 0.5) * 5;
-
-        nodePositions.set(id, {
-            x: (normX - 0.5) * drawWidth * aspectRatio + jitter,
-            y: (normY - 0.5) * drawHeight + jitter,
-        });
-    });
-
-    data.nodes.forEach((node) => {
-        const pos = nodePositions.get(node.id);
-        if (pos) {
-            node.fx = pos.x;
-            node.fy = pos.y;
+            worker.onerror = (err) => {
+                worker.terminate();
+                reject(err);
+            };
+        } catch (err) {
+            reject(err);
         }
     });
-
-    return data;
 }
