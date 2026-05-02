@@ -37,7 +37,7 @@ export function getNodeAlpha(node: GraphNode, config: StyleConfig): number {
     }
 
     // Highlight nodes in the same community
-    return node.community === selectedNode.community ? 1.0 : 0.3;
+    return node.community === selectedNode.community ? 1.0 : 0.2;
 }
 
 /**
@@ -85,8 +85,8 @@ export function getNodeLabel(node: GraphNode, config: StyleConfig): string {
         node.type === "tag"
             ? " (tag)"
             : node.type === "unresolved"
-              ? " (unresolved)"
-              : "";
+                ? " (unresolved)"
+                : "";
     return `${label}${typeLabel}`;
 }
 

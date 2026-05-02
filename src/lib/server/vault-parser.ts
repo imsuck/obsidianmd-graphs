@@ -109,8 +109,10 @@ export async function parseVault(config: VaultConfig): Promise<GraphData> {
     const nodes = [...nodeMap.values()];
     const degreeCounts = new Map<string, number>();
     for (const link of links) {
-        degreeCounts.set(link.source, (degreeCounts.get(link.source) ?? 0) + 1);
-        degreeCounts.set(link.target, (degreeCounts.get(link.target) ?? 0) + 1);
+        const s = typeof link.source === "string" ? link.source : link.source.id;
+        const t = typeof link.target === "string" ? link.target : link.target.id;
+        degreeCounts.set(s, (degreeCounts.get(s) ?? 0) + 1);
+        degreeCounts.set(t, (degreeCounts.get(t) ?? 0) + 1);
     }
     for (const node of nodes) {
         node.val = Math.max(1, degreeCounts.get(node.id) ?? 1);
@@ -168,6 +170,14 @@ function buildFileIndex(
     return index;
 }
 
+function removeCodeBlocks(text: string): string {
+    return text
+        .replace(/```[\s\S]*?```/g, (match) => " ".repeat(match.length))
+        .replace(/`[^`\n]*`/g, (match) => " ".repeat(match.length))
+        .replace(/\$\$[\s\S]*?\$\$/g, (match) => " ".repeat(match.length))
+        .replace(/\$[^$\n]*?\$/g, (match) => " ".repeat(match.length));
+}
+
 // ---------------------------------------------------------------------------
 // Wikilink extraction
 // ---------------------------------------------------------------------------
@@ -175,9 +185,10 @@ function buildFileIndex(
 function extractWikilinks(text: string): string[] {
     const results: string[] = [];
     let match: RegExpExecArray | null;
+    const strippedText = removeCodeBlocks(text);
     const re = new RegExp(WIKILINK_RE.source, WIKILINK_RE.flags);
 
-    while ((match = re.exec(text)) !== null) {
+    while ((match = re.exec(strippedText)) !== null) {
         const target = match[1].trim();
         if (target) results.push(target);
     }
@@ -262,9 +273,10 @@ function resolveWikilink(
 function extractTags(text: string): string[] {
     const results: string[] = [];
     let match: RegExpExecArray | null;
+    const strippedText = removeCodeBlocks(text);
     const re = new RegExp(TAG_RE.source, TAG_RE.flags);
 
-    while ((match = re.exec(text)) !== null) {
+    while ((match = re.exec(strippedText)) !== null) {
         const tag = match[1].trim();
         if (tag) results.push(tag);
     }

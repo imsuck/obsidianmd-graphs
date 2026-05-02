@@ -126,8 +126,8 @@
 					</div>
 
 					<div class="field">
-						<label>Link Resolution</label>
-						<div class="toggle-group">
+						<span class="field-label">Link Resolution</span>
+						<div class="toggle-group" role="group" aria-label="Link Resolution">
 							<button
 								class:active={linkMode === "auto"}
 								onclick={() => (linkMode = "auto")}>Auto</button
@@ -146,8 +146,8 @@
 					</div>
 
 					<div class="field">
-						<label>Tag Mode</label>
-						<div class="toggle-group">
+						<span class="field-label">Tag Mode</span>
+						<div class="toggle-group" role="group" aria-label="Tag Mode">
 							<button
 								class:active={tagMode === "flat"}
 								onclick={() => (tagMode = "flat")}>Flat</button
@@ -268,8 +268,9 @@
 				{:else if activeTab === "analytics"}
 					<h3 class="section-title">Node Radius</h3>
 					<div class="field">
-						<label>Centrality Metric</label>
+						<label for="metric-select">Centrality Metric</label>
 						<select
+							id="metric-select"
 							class="algo-select"
 							bind:value={metricId}
 							onchange={onApplyMetric}
@@ -288,8 +289,9 @@
 					<h3 class="section-title">Global Analytics</h3>
 
 					<div class="field">
-						<label>Algorithm</label>
+						<label for="algo-select">Algorithm</label>
 						<select
+							id="algo-select"
 							class="algo-select"
 							bind:value={globalAlgorithmId}
 							onchange={() => {
@@ -485,7 +487,8 @@
 	.field {
 		margin-bottom: 16px;
 	}
-	.field label {
+	.field label,
+	.field-label {
 		display: block;
 		font-size: 12px;
 		font-weight: 500;
