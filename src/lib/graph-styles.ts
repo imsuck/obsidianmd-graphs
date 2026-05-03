@@ -60,11 +60,11 @@ export function getLinkAlpha(link: any, config: StyleConfig): number {
     if (!source || !target) return 0.5;
 
     const highlightCommunity = selectedNode.community;
-    const isInternal =
-        source.community === highlightCommunity &&
-        target.community === highlightCommunity;
+    let alpha = 0.1;
+    if (source.community === highlightCommunity) alpha += 0.2;
+    if (target.community === highlightCommunity) alpha += 0.2;
 
-    return isInternal ? 0.5 : 0.1;
+    return alpha;
 }
 
 /**
@@ -85,8 +85,8 @@ export function getNodeLabel(node: GraphNode, config: StyleConfig): string {
         node.type === "tag"
             ? " (tag)"
             : node.type === "unresolved"
-                ? " (unresolved)"
-                : "";
+              ? " (unresolved)"
+              : "";
     return `${label}${typeLabel}`;
 }
 
@@ -95,6 +95,6 @@ export function getNodeLabel(node: GraphNode, config: StyleConfig): string {
  */
 export function getNodeSize(node: GraphNode): number {
     const base = node.val ?? 1;
-    if (node.type === "tag") return Math.max(base * 0.6, 0.5);
+    // if (node.type === "tag") return Math.max(base * 0.6, 0.5);
     return base;
 }

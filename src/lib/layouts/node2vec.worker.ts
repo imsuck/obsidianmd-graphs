@@ -40,7 +40,7 @@ self.onmessage = (e: MessageEvent) => {
     });
 
     const projection = umap.fit(embeddingMatrix);
-    
+
     // 3. Normalize and scale
     let minX = Infinity,
         maxX = -Infinity;
@@ -77,7 +77,7 @@ self.onmessage = (e: MessageEvent) => {
         });
     });
 
-    // We can't send Map over postMessage easily if we want it to be fast/compatible, 
+    // We can't send Map over postMessage easily if we want it to be fast/compatible,
     // but in modern browsers it works. However, let's use an object or array for better safety.
     const result: Record<string, { x: number; y: number }> = {};
     nodePositions.forEach((pos, id) => {

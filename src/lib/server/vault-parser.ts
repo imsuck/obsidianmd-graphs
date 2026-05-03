@@ -109,8 +109,10 @@ export async function parseVault(config: VaultConfig): Promise<GraphData> {
     const nodes = [...nodeMap.values()];
     const degreeCounts = new Map<string, number>();
     for (const link of links) {
-        const s = typeof link.source === "string" ? link.source : link.source.id;
-        const t = typeof link.target === "string" ? link.target : link.target.id;
+        const s =
+            typeof link.source === "string" ? link.source : link.source.id;
+        const t =
+            typeof link.target === "string" ? link.target : link.target.id;
         degreeCounts.set(s, (degreeCounts.get(s) ?? 0) + 1);
         degreeCounts.set(t, (degreeCounts.get(t) ?? 0) + 1);
     }
