@@ -6,14 +6,15 @@ export const EigenvectorMetric: MetricAlgorithm = {
     id: "eigenvector",
     name: "Eigenvector Centrality",
     description: "Measures node importance based on eigenvector centrality.",
-    execute: (data: GraphData) => {
+    execute: (data: GraphData, options: { maxIter?: number } = {}) => {
         if (data.nodes.length === 0) return;
         const graph = buildGraphologyGraph(data);
+        const maxIter = options.maxIter ?? 500;
 
         let scores: { [key: string]: number };
         try {
             scores = eigenvector(graph, {
-                maxIterations: 500,
+                maxIterations: maxIter,
                 tolerance: 1e-6,
                 getEdgeWeight: undefined,
             });

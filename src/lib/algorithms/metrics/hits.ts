@@ -6,9 +6,10 @@ export const HITSHubsMetric: MetricAlgorithm = {
     id: "hits-hubs",
     name: "HITS - Hubs",
     description: "Nodes that link to many authorities.",
-    execute: (data: GraphData) => {
+    execute: (data: GraphData, options: { maxIter?: number } = {}) => {
         if (data.nodes.length === 0) return;
         const graph = buildGraphologyGraph(data);
+        const maxIter = options.maxIter ?? 500;
 
         let results: {
             hubs: { [key: string]: number };
@@ -16,7 +17,7 @@ export const HITSHubsMetric: MetricAlgorithm = {
         };
         try {
             results = hits(graph, {
-                maxIterations: 500,
+                maxIterations: maxIter,
                 tolerance: 1e-6,
                 getEdgeWeight: 1,
             });
@@ -47,9 +48,10 @@ export const HITSAuthoritiesMetric: MetricAlgorithm = {
     id: "hits-authorities",
     name: "HITS - Authorities",
     description: "Nodes that are linked by many hubs.",
-    execute: (data: GraphData) => {
+    execute: (data: GraphData, options: { maxIter?: number } = {}) => {
         if (data.nodes.length === 0) return;
         const graph = buildGraphologyGraph(data);
+        const maxIter = options.maxIter ?? 500;
 
         let results: {
             hubs: { [key: string]: number };
@@ -57,7 +59,7 @@ export const HITSAuthoritiesMetric: MetricAlgorithm = {
         };
         try {
             results = hits(graph, {
-                maxIterations: 500,
+                maxIterations: maxIter,
                 tolerance: 1e-6,
                 getEdgeWeight: undefined,
             });

@@ -74,7 +74,7 @@
                     const color = getNodeBaseColor(node);
                     const alpha = getNodeAlpha(node, styleConfig);
 
-                    if (size * globalScale < 1) return;
+                    if (size * globalScale < 0.5) return;
 
                     ctx.save();
                     ctx.globalAlpha = alpha;

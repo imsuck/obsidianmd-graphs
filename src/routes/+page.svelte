@@ -24,6 +24,24 @@
 	let forceGraphRef: ForceGraph | undefined = $state();
 	let palette = $state<Map<number, string>>();
 	let communityRepresentatives = $state(new Map<number, GraphNode>());
+	
+	let filteredGraphData = $derived.by(() => {
+		const nodes = graphData.nodes.filter(n => {
+			if (n.type === "tag" && !settings.showTags) return false;
+			if (n.type === "unresolved" && !settings.showUnresolved) return false;
+			return true;
+		});
+		
+		const nodeIds = new Set(nodes.map(n => n.id));
+		
+		const links = graphData.links.filter(l => {
+			const sourceId = typeof l.source === "string" ? l.source : (l.source as any).id;
+			const targetId = typeof l.target === "string" ? l.target : (l.target as any).id;
+			return nodeIds.has(sourceId) && nodeIds.has(targetId);
+		});
+		
+		return { nodes, links };
+	});
 
 	$effect(() => {
 		settings.save();
@@ -117,6 +135,26 @@
 		}
 	});
 
+	$effect(() => {
+		// Clear selected node if it becomes hidden
+		if (!settings.showTags && selectedNode?.type === "tag") {
+			selectedNode = null;
+		}
+		if (!settings.showUnresolved && selectedNode?.type === "unresolved") {
+			selectedNode = null;
+		}
+	});
+
+	$effect(() => {
+		// Re-apply layout and analysis if filtering changes
+		if (settings.showTags !== undefined || settings.showUnresolved !== undefined) {
+			untrack(() => {
+				if (settings.layoutMode !== "force") applyLayout();
+				if (globalEnabled) applyGlobal();
+			});
+		}
+	});
+
 	function applyGlobal() {
 		let options: any = {};
 		if (settings.globalAlgorithmId === "louvain") {
@@ -126,7 +164,7 @@
 		}
 
 		const result = runCommunityAnalysis(
-			graphData,
+			filteredGraphData,
 			settings.globalAlgorithmId,
 			options,
 			settings.blendCommunities
@@ -146,14 +184,14 @@
 	}
 
 	function applyMetric() {
-		runMetricAnalysis(graphData, settings.metricId);
+		runMetricAnalysis(filteredGraphData, settings.metricId);
 		if (globalEnabled) reapplyColors();
 		else graphData = { ...graphData };
 	}
 
 	async function applyLayout() {
 		if (settings.layoutMode === "spectral") {
-			applySpectralLayout(graphData, window.innerWidth, window.innerHeight, {
+			applySpectralLayout(filteredGraphData, window.innerWidth, window.innerHeight, {
 				scale: settings.spectralScale,
 				aspectRatio: settings.spectralAspectRatio
 			});
@@ -164,7 +202,7 @@
 		} else if (settings.layoutMode === "node2vec") {
 			loading = true;
 			try {
-				await applyNode2VecLayout(graphData, window.innerWidth, window.innerHeight, {
+				await applyNode2VecLayout(filteredGraphData, window.innerWidth, window.innerHeight, {
 					p: settings.node2vecP,
 					q: settings.node2vecQ,
 					iterations: settings.node2vecIterations,
@@ -213,7 +251,7 @@
 	{#if graphData.nodes.length > 0}
 		<ForceGraph
 			bind:this={forceGraphRef}
-			{graphData}
+			graphData={filteredGraphData}
 			showArrows={settings.showArrows}
 			layoutMode={settings.layoutMode}
 			{globalEnabled}
@@ -263,6 +301,8 @@
 		bind:linkMode={settings.linkMode}
 		bind:tagMode={settings.tagMode}
 		bind:showArrows={settings.showArrows}
+		bind:showTags={settings.showTags}
+		bind:showUnresolved={settings.showUnresolved}
 		bind:globalEnabled
 		bind:globalAlgorithmId={settings.globalAlgorithmId}
 		bind:louvainResolution={settings.louvainResolution}
@@ -279,8 +319,8 @@
 		bind:collapsed={settings.collapsed}
 		bind:activeTab={settings.activeTab}
 		{loading}
-		nodeCount={graphData.nodes.length}
-		linkCount={graphData.links.length}
+		nodeCount={filteredGraphData.nodes.length}
+		linkCount={filteredGraphData.links.length}
 		{communityCount}
 		onLoadVault={loadVault}
 		onToggleGlobal={toggleGlobal}
@@ -290,7 +330,7 @@
 	/>
 
 	<AnalyticsPopup
-		{graphData}
+		graphData={filteredGraphData}
 		{selectedNode}
 		{communityRepresentative}
 		onClose={handleClosePopup}

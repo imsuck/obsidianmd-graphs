@@ -10,6 +10,8 @@
 		linkMode = $bindable("auto" as "auto" | "absolute" | "relative"),
 		tagMode = $bindable("flat" as "flat" | "hierarchical"),
 		showArrows = $bindable(true),
+		showTags = $bindable(true),
+		showUnresolved = $bindable(true),
 		globalEnabled = $bindable(false),
 		globalAlgorithmId = $bindable(""),
 		louvainResolution = $bindable(1.0),
@@ -39,6 +41,8 @@
 		linkMode: "auto" | "absolute" | "relative";
 		tagMode: "flat" | "hierarchical";
 		showArrows: boolean;
+		showTags: boolean;
+		showUnresolved: boolean;
 		globalEnabled: boolean;
 		globalAlgorithmId: string;
 		louvainResolution: number;
@@ -164,6 +168,20 @@
 						<label class="checkbox-label">
 							<input type="checkbox" bind:checked={showArrows} />
 							<span>Show Link Directions</span>
+						</label>
+					</div>
+
+					<div class="field">
+						<label class="checkbox-label">
+							<input type="checkbox" bind:checked={showTags} />
+							<span>Show Tags</span>
+						</label>
+					</div>
+
+					<div class="field">
+						<label class="checkbox-label">
+							<input type="checkbox" bind:checked={showUnresolved} />
+							<span>Show Unresolved Notes</span>
 						</label>
 					</div>
 

@@ -6,7 +6,7 @@ export const LabelPropagationAlgorithm: GlobalAlgorithm = {
     name: "Label Propagation",
     description:
         "Fast community detection where nodes adopt the most common label among their neighbors.",
-    execute: (data: GraphData) => {
+    execute: (data: GraphData, options: { maxIter?: number } = {}) => {
         const graph = buildGraphologyGraph(data);
 
         // Initialize each node with its own unique label
@@ -14,11 +14,11 @@ export const LabelPropagationAlgorithm: GlobalAlgorithm = {
         const nodes = graph.nodes();
         nodes.forEach((node: string, i: number) => labels.set(node, i));
 
-        let changed = true;
-        const maxIterations = 100;
-        let iterations = 0;
 
-        while (changed && iterations < maxIterations) {
+        const maxIter = options.maxIter ?? 100;
+        let iterations = 0;
+        let changed = true;
+        while (changed && iterations < maxIter) {
             changed = false;
             // Shuffle nodes to prevent oscillation
             const shuffledNodes = [...nodes].sort(() => Math.random() - 0.5);

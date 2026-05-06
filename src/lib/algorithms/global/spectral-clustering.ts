@@ -8,8 +8,9 @@ export const SpectralClusteringAlgorithm: GlobalAlgorithm = {
     name: "Spectral Clustering",
     description:
         "Clusters nodes using eigenvectors of the normalized graph Laplacian. Effective for complex topologies.",
-    execute: (data: GraphData, options: { k?: number } = {}) => {
+    execute: (data: GraphData, options: { k?: number, maxIter?: number } = {}) => {
         const k = options.k || 5;
+        const maxIter = options.maxIter ?? 100;
         const graph = buildGraphologyGraph(data);
         const n = data.nodes.length;
 
@@ -44,7 +45,7 @@ export const SpectralClusteringAlgorithm: GlobalAlgorithm = {
             return norm > 0 ? point.map((val) => val / norm) : point;
         });
 
-        const result = kmeans(normalizedPoints, k, {});
+        const result = kmeans(normalizedPoints, k, { maxIterations: maxIter });
 
         const labels = new Map<string, number>();
         nodeIds.forEach((id, i) => {

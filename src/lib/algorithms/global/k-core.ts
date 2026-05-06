@@ -6,7 +6,7 @@ export const KCoreAlgorithm: GlobalAlgorithm = {
     name: "K-Core Decomposition",
     description:
         "Partitions the graph into cores based on degrees. A k-core is a maximal subgraph where all nodes have degree at least k.",
-    execute: (data: GraphData) => {
+    execute: (data: GraphData, options: { maxIter?: number } = {}) => {
         const graph = buildGraphologyGraph(data);
 
         const deg = new Map<string, number>();
@@ -15,9 +15,10 @@ export const KCoreAlgorithm: GlobalAlgorithm = {
 
         const coreness = new Map<string, number>();
         let k = 0;
+        let iterations = 0;
+        const maxIter = options.maxIter ?? 1000;
         let remaining = nodes.length;
-
-        while (remaining > 0) {
+        while (remaining > 0 && iterations < maxIter) {
             let removedThisIter = true;
 
             while (removedThisIter) {
@@ -38,6 +39,7 @@ export const KCoreAlgorithm: GlobalAlgorithm = {
                 }
             }
             k++;
+            iterations++;
         }
 
         return finalizeCommunityColors(graph, data, coreness);

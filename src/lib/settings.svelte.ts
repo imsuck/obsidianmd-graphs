@@ -18,6 +18,8 @@ export class Settings {
     metricId = $state(METRIC_ALGORITHMS[0].id);
     layoutMode = $state<LayoutMode>("force");
     showArrows = $state(true);
+    showTags = $state(true);
+    showUnresolved = $state(true);
     blendCommunities = $state(false);
     collapsed = $state(false);
     activeTab = $state<"project" | "analytics">("project");
@@ -61,6 +63,10 @@ export class Settings {
                     this.layoutMode = data.layoutMode;
                 if (data.showArrows !== undefined)
                     this.showArrows = data.showArrows;
+                if (data.showTags !== undefined)
+                    this.showTags = data.showTags;
+                if (data.showUnresolved !== undefined)
+                    this.showUnresolved = data.showUnresolved;
                 if (data.blendCommunities !== undefined)
                     this.blendCommunities = data.blendCommunities;
                 if (data.collapsed !== undefined)
@@ -91,6 +97,8 @@ export class Settings {
             metricId: this.metricId,
             layoutMode: this.layoutMode,
             showArrows: this.showArrows,
+            showTags: this.showTags,
+            showUnresolved: this.showUnresolved,
             blendCommunities: this.blendCommunities,
             collapsed: this.collapsed,
             activeTab: this.activeTab,
